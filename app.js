@@ -58,6 +58,7 @@ io.on('connection' , socket => {
         socket.emit('connected' , `user connected : ${user}`)
     })
     socket.on('join chat' , user => {
+        console.log('user is',user)
         socket.join(user)
     })
     socket.on('new message', newMessage => {
@@ -65,4 +66,16 @@ io.on('connection' , socket => {
         console.log('new message data ',newMessage)
         socket.to(newMessage._id).emit('message recieved',newMessage)
     })
+    socket.on('leave chat', (chatId) => {
+        console.log(`User left chat: ${chatId}`);
+        socket.leave(chatId);
+    });
+
+    // Clean up on disconnect
+    socket.on('disconnect', () => {
+        console.log('A user disconnected');
+        // Additional cleanup logic if needed
+    });
 })
+
+

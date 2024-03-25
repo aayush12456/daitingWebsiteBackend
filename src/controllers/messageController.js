@@ -10,7 +10,7 @@ exports.createMessage = async ( req , res ) => {
         messageData = await authUser.populate(messageData , {
             path : 'chat.users'
         })
-        console.log('messages is',messageData)
+        // console.log('messages is',messageData)
         res.json({
             message : messageData
         })
@@ -25,8 +25,9 @@ exports.createMessage = async ( req , res ) => {
 exports.fetchMessage = async ( req , res ) => {
     try{
         const {sender , chat} = req.body
-        console.log('sender and chat',sender,chat)
+        // console.log('sender and chat',sender,chat)
         const messageData = await Message.find({ chat : chat})
+        // console.log('message return ',messageData)
         return res.json(
             {
                 message : messageData
