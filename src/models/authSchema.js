@@ -146,7 +146,12 @@ images: [{
       ref:'UserData'
     }
   ],
-});
+  
+},
+{
+  timestamps : true
+}
+);
 
 
 authSchema.methods.generateAuthToken = async function () {

@@ -403,3 +403,17 @@ exports.getToChatUser=async(req,res)=>{
         res.status(500).json({ mssg: "Internal server error" });
     }
 }
+exports.updateauthUser=async(req,res)=>{
+    try{
+        const _id=req.params.id
+        console.log('body is',req.body)
+        console.log(_id)
+        const updateUser=await authUser.findByIdAndUpdate(_id,req.body,{
+            new:true
+        })
+        res.status(201).send({mssg:'update data successfully',updateData:updateUser})
+        console.log('update is',updateUser)
+    }catch(e){
+        res.status(404).send({mssg:'internal server error'})
+    }
+}

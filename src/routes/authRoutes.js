@@ -36,4 +36,5 @@ router.get('/getLikeUser/:id', userController.getLikesUser);
 router.post('/likeFilterUser/:id', userController.likeFilterUser);
 router.post('/addToChatUser/:id', userController.addToChatUser);
 router.get('/getChatUser/:id', userController.getToChatUser);
+router.post('/updateUser/:id', userController.updateauthUser);
 module.exports = router;

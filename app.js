@@ -64,7 +64,8 @@ io.on('connection' , socket => {
     socket.on('new message', newMessage => {
         // socket.to(newMessage.chat._id).emit('message received' , newMessage)
         console.log('new message data ',newMessage)
-        socket.to(newMessage._id).emit('message recieved',newMessage)
+        console.log('chat id ',newMessage.chat._id)
+        socket.to(newMessage.chat._id).emit('message received',newMessage)
     })
     socket.on('leave chat', (chatId) => {
         console.log(`User left chat: ${chatId}`);
