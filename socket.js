@@ -1,7 +1,7 @@
 const socketCon = {
     init : server => {
         const io = require('socket.io')(server,{
-            cors : 'http://localhost:3000'
+            cors : 'http://localhost:4000'
         })
         io.on('connection' , socket => {
             console.log('client connected');

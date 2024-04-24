@@ -116,25 +116,37 @@ images: [{
     required: true,
     
   },
-  filterData:[
+  counter:{
+  type:Number
+  },
+  likeCounter:{
+    type:Number
+    },
+  notify:{
+    type:String
+  },
+  likeNotify:{
+    type:String
+  },
+  filterData:[ // schema for unlike user id
     {
       type:Schema.Types.ObjectId,
       ref:'UserData'
     }
   ],
-  visitors:[
+  visitors:[ // schema for visitor user id
     {
       type:Schema.Types.ObjectId,
       ref:'UserData'
     }
   ],
-  likes:[
+  likes:[ // schema for like user id
     {
       type:Schema.Types.ObjectId,
       ref:'UserData'
     }
   ],
-  likeFilterData:[
+  likeFilterData:[ // schema for like user id
     {
       type:Schema.Types.ObjectId,
       ref:'UserData'
@@ -156,7 +168,7 @@ images: [{
 
 authSchema.methods.generateAuthToken = async function () {
   try {
-    console.log(this._id);
+    console.log('toke data',this._id);
     // const token = jwt.sign(
     //   { _id: this._id.toString() },
     //   process.env.registerData,

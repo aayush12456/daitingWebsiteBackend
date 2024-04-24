@@ -67,10 +67,19 @@ io.on('connection' , socket => {
         console.log('chat id ',newMessage.chat._id)
         socket.to(newMessage.chat._id).emit('message received',newMessage)
     })
+    socket.on('chat message', (msg) => {
+        console.log('new counter data',msg)
+        io.emit('new counter', msg);
+      });
+
     socket.on('leave chat', (chatId) => {
         console.log(`User left chat: ${chatId}`);
         socket.leave(chatId);
     });
+    socket.on('getVisitorCount',(userId)=>{
+     console.log(`get user count ${userId}`)
+     io.emit('get user',userId)
+    })
 
     // Clean up on disconnect
     socket.on('disconnect', () => {
@@ -79,4 +88,4 @@ io.on('connection' , socket => {
     });
 })
 
-
+module.exports={io}

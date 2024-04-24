@@ -1,5 +1,6 @@
 const bcrypt=require('bcrypt')
 const authUser=require('../models/authSchema')
+const io=require('../../app')
 exports.register=async (req,res)=>{
     
 const file=req.files.map(file=>file.filename)
@@ -142,10 +143,10 @@ exports.allUser = async (req , res) => {
 // }
 
 
-exports.getFilterUser = async (req, res) => {
-    try {
+exports.getFilterUser = async (req, res) => { // now show all updated user on the basis of gender and not show like and ulike user 
+    try {                                     // on the basis of id
         const userId = req.params.id; // Assuming the user ID is passed as a parameter in the URL
-        
+        console.log('get filter data',userId) // login user id
         // Find the user with the specified ID
         const user = await authUser.findById(userId);
         const filterUserArray = user.filterData;
@@ -165,7 +166,7 @@ exports.getFilterUser = async (req, res) => {
         let interestUsers;
 
         if (userGender === 'Male') {
-            // Find females with at least one similar interest and not in filterUserArray
+            // Find females with at least one similar interest and not in filterUserArray or likeFilterUserArray
             interestUsers = await authUser.find({ 
                 gender: 'Female', 
                 interest: { $in: userInterests },
@@ -173,7 +174,7 @@ exports.getFilterUser = async (req, res) => {
                 _id: { $nin: [...filterUserArray, ...likeFilterUserArray] } 
             });
         } else if (userGender === 'Female') {
-            // Find males with at least one similar interest and not in filterUserArray
+            // Find males with at least one similar interest and not in filterUserArray or likeFilterUserArray
             interestUsers = await authUser.find({ 
                 gender: 'Male', 
                 interest: { $in: userInterests },
@@ -195,9 +196,9 @@ exports.getFilterUser = async (req, res) => {
     }
 };
 
-exports.addFilterUser = async (req, res) => {
+exports.addFilterUser = async (req, res) => { // if you want to unlike user that unlike user id store in a database with the help of these func
     try {
-        const userId = req.params.id;
+        const userId = req.params.id; // login person  userId
         console.log('user id is', userId);
 
         // Fetch the user object based on the provided userId
@@ -206,7 +207,7 @@ exports.addFilterUser = async (req, res) => {
             return res.status(404).json({ mssg: "User not found" });
         }
 
-        const addUserId = req.body.userId;
+        const addUserId = req.body.userId; // unlike person user id
         console.log('add id is', addUserId);
 
         // Update the user object to add the new ID to the filterData array
@@ -244,12 +245,12 @@ exports.addFilterUser = async (req, res) => {
 //         res.status(500).json({ mssg: "Internal server error" });
 //     }
 // }
-
-exports.addVisitorUser=async(req,res)=>{
+ 
+exports.addVisitorUser=async(req,res)=>{ // function of store id of visitor user in a login User
     try{
      
-        const personUserId=req.body.userId
-        const visitorUserId = req.params.id;
+        const personUserId=req.body.userId // login user id
+        const visitorUserId = req.params.id; // visitor id
         const userObj = await authUser.findById(personUserId);
         console.log('user obj is',userObj)
         if (!userObj) {
@@ -281,9 +282,9 @@ exports.addVisitorUser=async(req,res)=>{
 //         res.status(500).json({ mssg: "Internal server error" });
 //     }
 // }
-exports.getVisitorUser=async(req,res)=>{
+exports.getVisitorUser=async(req,res)=>{ // function to show visitor user in a login user
     try{
-        const userId = req.params.id; 
+        const userId = req.params.id; // login user id
         const user = await authUser.findById(userId);
         console.log('user is',user)
         const visitorUserArray=user.visitors
@@ -293,16 +294,19 @@ exports.getVisitorUser=async(req,res)=>{
             _id: { $in: visitorUserArray }, 
             
         });
-        res.json({ getVisitors });
+        const lastVisitor = getVisitors[0];
+        console.log('Last visitor:', lastVisitor);
+        res.json({ getVisitors,data:lastVisitor });
     }catch (error) {
         console.error(error);
         res.status(500).json({ mssg: "Internal server error" });
     }
 }
-exports.addLikesUser=async(req,res)=>{
+exports.addLikesUser=async(req,res)=>{ // function to store login user id in a like user
     try{
-        const personUserId=req.body.likeUserId
-        const likesUserId = req.params.id;
+        const personUserId=req.body.likeUserId // like user id
+        const likesUserId = req.params.id; // login user id
+        console.log(personUserId, 'fjdkff',likesUserId)
         const userObj = await authUser.findById(personUserId);
         console.log('user obj is',userObj)
         if (!userObj) {
@@ -317,9 +321,9 @@ exports.addLikesUser=async(req,res)=>{
         res.status(500).json({ mssg: "Internal server error" });
     }
 }
-exports.getLikesUser=async(req,res)=>{
+exports.getLikesUser=async(req,res)=>{ // function to get data of like user
     try{
-        const userId = req.params.id; 
+        const userId = req.params.id; // login user id
         const user = await authUser.findById(userId);
         console.log('user is',user)
         const likeUserArray=user.likes
@@ -335,7 +339,7 @@ exports.getLikesUser=async(req,res)=>{
         res.status(500).json({ mssg: "Internal server error" });
     }
 }
-exports.likeFilterUser=async(req,res)=>{
+exports.likeFilterUser=async(req,res)=>{ // function to store like user id in a login user
 try{
     const userId = req.params.id;
     console.log('user id is', userId);
@@ -403,7 +407,7 @@ exports.getToChatUser=async(req,res)=>{
         res.status(500).json({ mssg: "Internal server error" });
     }
 }
-exports.updateauthUser=async(req,res)=>{
+exports.updateauthUser=async(req,res)=>{ // function to update user
     try{
         const _id=req.params.id
         console.log('body is',req.body)
@@ -417,3 +421,216 @@ exports.updateauthUser=async(req,res)=>{
         res.status(404).send({mssg:'internal server error'})
     }
 }
+
+
+exports.counterUser = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const userId=req.body.userId
+    const userObj = await authUser.findById(userId);
+    // console.log('user data obj',userObj)
+    if (userObj) {
+      userObj.counter = userObj.counter ? userObj.counter + 1 : 1; // Incrementing the counter value
+      await userObj.save(); // Saving the updated userObj
+    //   io.emit('new counter', { userId: userId, counter: userObj.counter });
+      console.log('Updated userObj:', userObj);
+      res.status(200).send({ message: 'Counter incremented successfully', userObj });
+    } else {
+      
+      res.status(404).send({ message: 'User not found' });
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send({ message: 'Internal server error' });
+  }
+};
+// exports.counterUser = async (userId) => {
+//     try {
+//       const id = req.params.id;
+//       const userId=userId
+//       const userObj = await authUser.findById(userId);
+//       // console.log('user data obj',userObj)
+//       if (userObj) {
+//         userObj.counter = userObj.counter ? userObj.counter + 1 : 1; // Incrementing the counter value
+//         await userObj.save(); // Saving the updated userObj
+//       //   io.emit('new counter', { userId: userId, counter: userObj.counter });
+//         console.log('Updated userObj:', userObj);
+//         // res.status(200).send({ message: 'Counter incremented successfully', userObj });
+//         return userObj.counter
+//       } else {
+        
+//         // res.status(404).send({ message: 'User not found' });
+//         return 0
+//       }
+//     } catch (error) {
+//       console.error('Error:', error);
+//     //   res.status(500).send({ message: 'Internal server error' });
+//     return 0
+//     }
+//   };
+exports.getCounterUser=async(req,res)=>{
+    try{
+        const userId = req.params.id; 
+        const user = await authUser.findById(userId);
+        console.log('get count user is',user.counter)
+        res.json({ getCount:user.counter });
+     
+    } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send({ message: 'Internal server error' });
+  }
+}
+exports.deleteCounterUser = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const user = await authUser.findById(userId);
+        
+        if (user) {
+            // Delete the counter property from the user object
+            user.counter = null; // or delete user.counter;
+
+            // Save the updated user object
+            await user.save();
+
+            console.log('Counter deleted for user:', user);
+            res.status(200).send({ message: 'Counter deleted successfully', user });
+        } else {
+            res.status(404).send({ message: 'User not found' });
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send({ message: 'Internal server error' });
+    }
+};
+exports.addNotifyUser = async (req, res) => {
+    try {
+      const id = req.params.id;
+      const userId=req.body.userId
+      const userObj = await authUser.findById(userId);
+      userObj.notify=id
+      await userObj.save()
+      res.status(200).send({ message: 'notify user updated',user:userObj });
+    } catch (error) {
+      console.error('Error:', error);
+      res.status(500).send({ message: 'Internal server error' });
+    }
+  };
+
+  exports.getNotifyUser = async (req, res) => {
+    try {
+      const userId = req.params.id; 
+      const user = await authUser.findById(userId);
+  
+      // Check if the user is found
+      if (!user) {
+        return res.status(404).send({ message: 'User not found' });
+      }
+     const obj=await authUser.findById(user.notify)
+      // Respond with the user's notification data
+      res.status(200).send({data:obj});
+      setTimeout(async () => {
+        user.notify = null; // Clear the notification
+        await user.save(); // Save the changes
+      }, 5000);
+      // Optionally, clear the user's notification after a certain duration
+     
+    } catch (error) {
+      console.error('Error:', error);
+      res.status(500).send({ message: 'Internal server error' });
+    }
+  };
+  
+  exports.addLikeNotifyUser = async (req, res) => {
+    try {
+      const id = req.params.id;
+      const userId=req.body.userId
+      const userObj = await authUser.findById(userId);
+      userObj.likeNotify=id
+      await userObj.save()
+      res.status(200).send({ message: 'notify like user updated',user:userObj });
+    } catch (error) {
+      console.error('Error:', error);
+      res.status(500).send({ message: 'Internal server error' });
+    }
+  };
+
+  exports.getLikeNotifyUser = async (req, res) => {
+    try {
+      const userId = req.params.id; 
+      const user = await authUser.findById(userId);
+  
+      // Check if the user is found
+      if (!user) {
+        return res.status(404).send({ message: 'User not found' });
+      }
+     const obj=await authUser.findById(user.likeNotify)
+      // Respond with the user's notification data
+      res.status(200).send({data:obj});
+      setTimeout(async () => {
+        user.likeNotify = null; // Clear the notification
+        await user.save(); // Save the changes
+      }, 5000);
+      // Optionally, clear the user's notification after a certain duration
+     
+    } catch (error) {
+      console.error('Error:', error);
+      res.status(500).send({ message: 'Internal server error' });
+    }
+  };
+
+  exports.addLikeCounterUser = async (req, res) => {
+    try {
+      const id = req.params.id;
+      const userId=req.body.userId
+      const userObj = await authUser.findById(userId);
+      // console.log('user data obj',userObj)
+      if (userObj) {
+        userObj.likeCounter = userObj.likeCounter ? userObj.likeCounter + 1 : 1; // Incrementing the counter value
+        await userObj.save(); // Saving the updated userObj
+        console.log(' add like count Updated userObj:', userObj);
+        res.status(200).send({ message: 'Like Counter incremented successfully', userObj });
+      } else {
+        
+        res.status(404).send({ message: 'User not found' });
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      res.status(500).send({ message: 'Internal server error' });
+    }
+  };
+
+  exports.getLikeCounterUser=async(req,res)=>{
+    try{
+        const userId = req.params.id; 
+        const user = await authUser.findById(userId);
+        console.log('get like count user is',user.likeCounter)
+        res.json({ getLikeCount:user.likeCounter });
+     
+    } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send({ message: 'Internal server error' });
+  }
+}
+
+exports.deleteLikeCounterUser = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const user = await authUser.findById(userId);
+        
+        if (user) {
+            // Delete the counter property from the user object
+            user.likeCounter = null; // or delete user.counter;
+
+            // Save the updated user object
+            await user.save();
+
+            console.log('like Counter deleted for user:', user);
+            res.status(200).send({ message: 'like Counter deleted successfully', user });
+        } else {
+            res.status(404).send({ message: 'User not found' });
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send({ message: 'Internal server error' });
+    }
+};
