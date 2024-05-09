@@ -146,12 +146,40 @@ images: [{
       ref:'UserData'
     }
   ],
-  likeFilterData:[ // schema for like user id
+  likeFilterData:[ // schema for likeFilterUser id
     {
       type:Schema.Types.ObjectId,
       ref:'UserData'
     }
   ],
+  likeUser:[ // schema for likeUser when comes in like or visitor section in a id format
+  {
+    type:Schema.Types.ObjectId,
+    ref:'UserData'
+  },
+],
+skipUser:[ // schema for skipUser when comes in like or visitor section in a id format
+{
+  type:Schema.Types.ObjectId,
+  ref:'UserData'
+}
+],
+matchUser:[ // to store id which has come in like section
+{
+  type:Schema.Types.ObjectId,
+  ref:'UserData'
+}
+],
+
+anotherMatchUser:[ // to store id of loginUser
+{
+  type:Schema.Types.ObjectId,
+  ref:'UserData'
+}
+],
+matchNotify:{ //to store id of loginUser
+  type:String
+},
   addToChatData:[
     {
       type:Schema.Types.ObjectId,
