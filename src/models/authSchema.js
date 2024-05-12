@@ -177,6 +177,13 @@ anotherMatchUser:[ // to store id of loginUser
   ref:'UserData'
 }
 ],
+anotherMatchData:[ // to store id of loginUser
+{
+  type:Schema.Types.ObjectId,
+  ref:'UserData'
+}
+],
+
 matchNotify:{ //to store id of loginUser
   type:String
 },

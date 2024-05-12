@@ -302,25 +302,54 @@ exports.getVisitorUser=async(req,res)=>{ // function to show visitor user in a l
         res.status(500).json({ mssg: "Internal server error" });
     }
 }
-exports.addLikesUser=async(req,res)=>{ // function to store login user id in a like user
-    try{
-        const personUserId=req.body.likeUserId // like user id
-        const likesUserId = req.params.id; // login user id
-        console.log(personUserId, 'fjdkff',likesUserId)
-        const userObj = await authUser.findById(personUserId);
-        console.log('user obj is',userObj)
-        if (!userObj) {
-                 return res.status(404).json({ mssg: "User not found" });
-             }
-             userObj.likes.push(likesUserId)
-             const likeUser=await userObj.save()
-             res.json({likes:likeUser})
+// exports.addLikesUser=async(req,res)=>{ // function to store login user id in a like user
+//     try{
+//         const personUserId=req.body.likeUserId // like user id
+//         const likesUserId = req.params.id; // login user id
+//         console.log(personUserId, 'fjdkff',likesUserId)
+//         const userObj = await authUser.findById(personUserId);
+//         console.log('user obj is',userObj)
+//         if (!userObj) {
+//                  return res.status(404).json({ mssg: "User not found" });
+//              }
+//              userObj.likes.push(likesUserId)
+//              const likeUser=await userObj.save()
+//              res.json({likes:likeUser})
 
-    }catch (error) {
+//     }catch (error) {
+//         console.error(error);
+//         res.status(500).json({ mssg: "Internal server error" });
+//     }
+// }
+
+exports.addLikesUser = async (req, res) => {
+    try {
+        const personUserId = req.body.likeUserId; // like user id
+        const likesUserId = req.params.id; // login user id
+        console.log(personUserId, 'fjdkff', likesUserId);
+
+        const userObj = await authUser.findById(personUserId);
+        console.log('user obj is', userObj);
+
+        if (!userObj) {
+            return res.status(404).json({ mssg: "User not found" });
+        }
+
+        // Check if likeUserId is already present in userObj.visitors
+        if (userObj.visitors.includes(likesUserId)) {
+            return res.status(400).json({ mssg: "User already visited" });
+        }
+
+        // If likeUserId is not present in visitors, add it to likes
+        userObj.likes.push(likesUserId);
+        const likeUser = await userObj.save();
+        res.json({ likes: likeUser });
+
+    } catch (error) {
         console.error(error);
         res.status(500).json({ mssg: "Internal server error" });
     }
-}
+};
 exports.getLikesUser=async(req,res)=>{ // function to get data of like user
     try{
         const userId = req.params.id; // login user id
@@ -721,34 +750,144 @@ exports.getVisitorPlusSkipUser=async(req,res)=>{ // function to get data of like
 }
 
 
-exports.addMatchUser=async(req,res)=>{ // function to store login user id in a like user
-    try{
-        const matchLikeId=req.body.matchLikeId // like user id
+// exports.addMatchUser=async(req,res)=>{ // function to store login user id in a like user
+//     try{
+//         const matchLikeId=req.body.matchLikeId // like user id
+//         const loginId = req.params.id; // login user id
+//         console.log(matchLikeId, 'matchPlusLike',loginId) 
+//         const userObj = await authUser.findById(loginId);
+//         const anotherUserObj=await authUser.findById(matchLikeId)
+//         const matchUserObj=await authUser.findById(matchLikeId)
+
+
+//         if (!userObj && !anotherUserObj ) {
+//                  return res.status(404).json({ mssg: "User not found" });
+//              }
+//              userObj.matchUser.push(matchLikeId)
+//              anotherUserObj.anotherMatchUser.push(loginId)
+//              matchUserObj.matchNotify=loginId
+//              const matchLikeUser=await userObj.save()
+//              const anotherMatchLikeUser=await anotherUserObj.save()
+//              const matchUser=await matchUserObj.save()
+//              console.log('match person like',matchLikeUser)
+//              console.log('match User',matchUser)
+//              res.json({matchLikes:matchLikeUser,loginUser:userObj,anotherLoginUser:anotherUserObj,anotherMatchLikes:anotherMatchLikeUser,matchUserData:matchUser})
+
+//     }catch (error) {
+//         console.error(error);
+//         res.status(500).json({ mssg: "Internal server error" });
+//     }
+// }
+exports.addMatchUser = async (req, res) => {
+    try {
+        const matchLikeId = req.body.matchLikeId; // like user id
         const loginId = req.params.id; // login user id
-        console.log(matchLikeId, 'matchPlusLike',loginId) 
+        console.log(matchLikeId, 'matchPlusLike', loginId);
+
         const userObj = await authUser.findById(loginId);
-        const anotherUserObj=await authUser.findById(matchLikeId)
-        const matchUserObj=await authUser.findById(matchLikeId)
+        const anotherUserObj = await authUser.findById(matchLikeId);
+        const matchUserObj = await authUser.findById(matchLikeId);
 
+        if (!userObj && !anotherUserObj) {
+            return res.status(404).json({ mssg: "User not found" });
+        }
 
-        if (!userObj && !anotherUserObj ) {
-                 return res.status(404).json({ mssg: "User not found" });
-             }
-             userObj.matchUser.push(matchLikeId)
-             anotherUserObj.anotherMatchUser.push(loginId)
-             matchUserObj.matchNotify=loginId
-             const matchLikeUser=await userObj.save()
-             const anotherMatchLikeUser=await anotherUserObj.save()
-             const matchUser=await matchUserObj.save()
-             console.log('match person like',matchLikeUser)
-             console.log('match User',matchUser)
-             res.json({matchLikes:matchLikeUser,loginUser:userObj,anotherLoginUser:anotherUserObj,anotherMatchLikes:anotherMatchLikeUser,matchUserData:matchUser})
+        // Check if loginId is present in anotherUserObj.likes
+        if (!anotherUserObj.likes.includes(loginId)) {
+            anotherUserObj.anotherMatchData.push(loginId);
+        }
 
-    }catch (error) {
+        userObj.matchUser.push(matchLikeId);
+        anotherUserObj.anotherMatchUser.push(loginId);
+        matchUserObj.matchNotify = loginId;
+
+        const matchLikeUser = await userObj.save();
+        const anotherMatchLikeUser = await anotherUserObj.save();
+        const matchUser = await matchUserObj.save();
+
+        console.log('match person like', matchLikeUser);
+        console.log('match User', matchUser);
+
+        res.json({
+            matchLikes: matchLikeUser,
+            loginUser: userObj,
+            anotherLoginUser: anotherUserObj,
+            anotherMatchLikes: anotherMatchLikeUser,
+            matchUserData: matchUser
+        });
+
+    } catch (error) {
         console.error(error);
         res.status(500).json({ mssg: "Internal server error" });
     }
-}
+};
+
+
+// exports.getMatchUser=async(req,res)=>{ // function to get data of like user
+//     try{
+//         const userId = req.params.id; // login user id
+//         const user = await authUser.findById(userId);
+//         console.log('get match user is',user)
+//         const getMatchUserArray=user.matchUser
+//         const anothergetMatchUserArray=user.anotherMatchUser
+//         console.log(' get match data is',getMatchUserArray)
+
+//         const obj=await authUser.findById(user.matchNotify)
+//         let matchUser;
+//         matchUser = await authUser.find({  
+//             _id: { $in: getMatchUserArray }, 
+            
+//         });
+//         let anotherMatchUser;
+//         anotherMatchUser=await authUser.find({
+//             _id: { $in:anothergetMatchUserArray }
+//         })
+      
+       
+
+//         res.json({matchUser: matchUser,anotherMatchUser:anotherMatchUser,lastAnotherMatchUser:obj });
+//         setTimeout(async () => {
+//             user.matchNotify = null; // Clear the notification
+//             await user.save(); // Save the changes
+//           }, 5000);
+//     }catch (error) {
+//         console.error(error);
+//         res.status(500).json({ mssg: "Internal server error" });
+//     }
+// }
+
+// exports.getMatchUser=async(req,res)=>{ // function to get data of like user
+//     try{
+//         const userId = req.params.id; // login user id
+//         const user = await authUser.findById(userId);
+//         console.log('get match user is',user)
+//         const getMatchUserArray=user.matchUser
+//         const anothergetMatchUserArray=user.anotherMatchUser
+//         console.log(' get match data is',getMatchUserArray)
+
+//         const obj=await authUser.findById(user.matchNotify)
+//         let matchUser;
+//         matchUser = await authUser.find({  
+//             _id: { $in: getMatchUserArray }, 
+            
+//         });
+//         let anotherMatchUser;
+//         anotherMatchUser=await authUser.find({
+//             _id: { $in:anothergetMatchUserArray }
+//         })
+      
+             
+
+//         res.json({matchUser: matchUser,anotherMatchUser:anotherMatchUser,lastAnotherMatchUser:obj });
+//         setTimeout(async () => {
+//             user.matchNotify = null; // Clear the notification
+//             await user.save(); // Save the changes
+//           }, 5000);
+//     }catch (error) {
+//         console.error(error);
+//         res.status(500).json({ mssg: "Internal server error" });
+//     }
+// }
 
 exports.getMatchUser=async(req,res)=>{ // function to get data of like user
     try{
@@ -758,7 +897,7 @@ exports.getMatchUser=async(req,res)=>{ // function to get data of like user
         const getMatchUserArray=user.matchUser
         const anothergetMatchUserArray=user.anotherMatchUser
         console.log(' get match data is',getMatchUserArray)
-
+        const anothergetMatchUserData=user.anotherMatchData
         const obj=await authUser.findById(user.matchNotify)
         let matchUser;
         matchUser = await authUser.find({  
@@ -769,10 +908,14 @@ exports.getMatchUser=async(req,res)=>{ // function to get data of like user
         anotherMatchUser=await authUser.find({
             _id: { $in:anothergetMatchUserArray }
         })
-      
-       
+        
+        let anotherMatchUserData;
+        anotherMatchUserData=await authUser.find({
+            _id: { $in:anothergetMatchUserData }
+        })
+             
 
-        res.json({matchUser: matchUser,anotherMatchUser:anotherMatchUser,lastAnotherMatchUser:obj });
+        res.json({matchUser: matchUser,anotherMatchUser:anotherMatchUser,lastAnotherMatchUser:obj,anotherMatchUserData:anotherMatchUserData  });
         setTimeout(async () => {
             user.matchNotify = null; // Clear the notification
             await user.save(); // Save the changes
@@ -782,3 +925,83 @@ exports.getMatchUser=async(req,res)=>{ // function to get data of like user
         res.status(500).json({ mssg: "Internal server error" });
     }
 }
+
+
+
+
+
+// modifed function
+// exports.addMatchUser=async(req,res)=>{ // function to store login user id in a like user
+//     try{
+//         const matchLikeId=req.body.matchLikeId // like user id
+//         const loginId = req.params.id; // login user id
+//         console.log(matchLikeId, 'matchPlusLike',loginId) 
+//         const userObj = await authUser.findById(loginId);
+//         const anotherUserObj=await authUser.findById(matchLikeId)
+//         const matchUserObj=await authUser.findById(matchLikeId)
+
+
+//         if (!userObj && !anotherUserObj ) {
+//                  return res.status(404).json({ mssg: "User not found" });
+//              }
+
+//              if (anotherUserObj.visitor.includes(loginId)) {
+//                 // If present, store loginId in anotherMatchData
+//                 anotherUserObj.anotherMatchData.push(loginId);
+//               } else {
+//                 // If not present, store loginId in anotherMatchUser
+//                 anotherUserObj.anotherMatchUser.push(loginId);
+//               }
+
+//              userObj.matchUser.push(matchLikeId)
+//             //  anotherUserObj.anotherMatchUser.push(loginId)
+//              matchUserObj.matchNotify=loginId
+//              const matchLikeUser=await userObj.save()
+//              const anotherMatchLikeUser=await anotherUserObj.save()
+//              const matchUser=await matchUserObj.save()
+//              console.log('match person like',matchLikeUser)
+//              console.log('match User',matchUser)
+//              res.json({matchLikes:matchLikeUser,loginUser:userObj,anotherLoginUser:anotherUserObj,anotherMatchLikes:anotherMatchLikeUser,matchUserData:matchUser})
+
+//     }catch (error) {
+//         console.error(error);
+//         res.status(500).json({ mssg: "Internal server error" });
+//     }
+// }
+
+// exports.getMatchUser=async(req,res)=>{ // function to get data of like user
+//     try{
+//         const userId = req.params.id; // login user id
+//         const user = await authUser.findById(userId);
+//         console.log('get match user is',user)
+//         const getMatchUserArray=user.matchUser
+//         const anothergetMatchUserArray=user.anotherMatchUser
+//         const anothergetMatchUserData=user.anotherMatchData
+//         console.log(' get match data is',getMatchUserArray)
+
+//         const obj=await authUser.findById(user.matchNotify)
+//         let matchUser;
+//         matchUser = await authUser.find({  
+//             _id: { $in: getMatchUserArray }, 
+            
+//         });
+//         let anotherMatchUser;
+//         anotherMatchUser=await authUser.find({
+//             _id: { $in:anothergetMatchUserArray }
+//         })
+//         let anotherMatchUserData;
+//         anotherMatchUserData=await authUser.find({
+//             _id: { $in:anothergetMatchUserData }
+//         })
+    
+       
+
+//         res.json({matchUser: matchUser,anotherMatchUser:anotherMatchUser,lastAnotherMatchUser:obj,anotherMatchUserData:anotherMatchUserData });
+//         setTimeout(async () => {
+//             user.matchNotify = null; // Clear the notification
+//             await user.save(); // Save the changes
+//           }, 5000);
+//     }catch (error) {
+//         console.error(error);
+//         res.status(500).json({ mssg: "Internal server error" });
+//     }
