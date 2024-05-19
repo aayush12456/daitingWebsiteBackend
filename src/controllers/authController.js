@@ -783,15 +783,19 @@ exports.addMatchUser = async (req, res) => {
         const matchLikeId = req.body.matchLikeId; // like user id
         const loginId = req.params.id; // login user id
         console.log(matchLikeId, 'matchPlusLike', loginId);
-
         const userObj = await authUser.findById(loginId);
         const anotherUserObj = await authUser.findById(matchLikeId);
         const matchUserObj = await authUser.findById(matchLikeId);
+        console.log('user obj data is',userObj)
+        console.log('another user obj data is',anotherUserObj)
 
         if (!userObj && !anotherUserObj) {
             return res.status(404).json({ mssg: "User not found" });
         }
-
+        const index = anotherUserObj. likeUser.indexOf(loginId);
+        if (index > -1) {
+            anotherUserObj. likeUser.splice(index, 1);
+        }
         // Check if loginId is present in anotherUserObj.likes
         if (!anotherUserObj.likes.includes(loginId)) {
             anotherUserObj.anotherMatchData.push(loginId);
