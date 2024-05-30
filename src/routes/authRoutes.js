@@ -26,7 +26,7 @@ router.use(express.static('public'));
 // router.post('/signup', upload.single('images'), userController.register); // for single file uploaded
 router.post('/signup', upload.array('images', 4), userController.register); // Up to 4 images can be uploaded
 router.post('/login', userController.login)
-router.get('/allUsers', userController.allUser);
+router.get('/allUsers/:id', userController.allUser);
 router.get('/filterUsers/:id', userController.getFilterUser);
 router.post('/addFilterUser/:id',userController.addFilterUser)
 router.post('/addVisitorUser/:id',userController.addVisitorUser)

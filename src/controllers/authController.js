@@ -64,53 +64,48 @@ exports.login=async (req,res)=>{
     }
 }
 
-exports.allUser = async (req , res) => {
-    try{
-        const users = await authUser.find()
-        res.json({
-            users : users
-        })
-    }
-    catch(error){
+exports.allUser = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const user = await authUser.findById(userId);
 
+        // Check if the user exists
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const city = user.city;
+        const gender = user.gender;
+        const users = await authUser.find();
+
+        // Filter out users with the same city and opposite gender
+        let filteredUsers = users.filter(u => u.city !== city);
+        
+        if (gender === 'Male') {
+            filteredUsers = filteredUsers.filter(u => u.gender === 'Female');
+        } else {
+            filteredUsers = filteredUsers.filter(u => u.gender === 'Male');
+        }
+
+        res.json({
+            users: filteredUsers
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error" });
     }
 }
-// exports.getFilterUser = async (req, res) => {
-//     try {
+// exports.getFilterUser = async (req, res) => { // now show all updated user on the basis of gender and not show like and ulike user 
+//     try {                                     // on the basis of id
 //         const userId = req.params.id; // Assuming the user ID is passed as a parameter in the URL
-        
+//         console.log('get filter data',userId) // login user id
 //         // Find the user with the specified ID
 //         const user = await authUser.findById(userId);
-        
-//         if (!user) {
-//             return res.status(404).json({ mssg: "User not found" });
-//         }
+//         console.log('user is data',user)
+//         const filterUserArray = user.filterData;
+//         console.log('filter user array ', filterUserArray);
 
-//         const userInterests = user.interest; // Get interests of the user
-//         const userGender=user.gender
-//         console.log('gender is',userGender)
-
-//         // Find users whose interests array contains at least one of the interests of the specified user
-//         const interestUsers = await authUser.find({ interest: { $in: userInterests } });
-
-//         if (!interestUsers || interestUsers.length === 0) {
-//             return res.status(404).json({ mssg: "No users found with matching interest" });
-//         }
-
-//         res.json({ interestUsers });
-//     } catch (error) {
-//         res.status(500).json({ mssg: "Internal server error" });
-//     }
-// }
-
-// exports.getFilterUser = async (req, res) => {
-//     try {
-//         const userId = req.params.id; // Assuming the user ID is passed as a parameter in the URL
-        
-//         // Find the user with the specified ID
-//         const user = await authUser.findById(userId);
-//         const filterUserArray=user.filterData
-//         console.log('filter user array ',filterUserArray)
+//         const likeFilterUserArray=user.likeFilterData
+//         console.log('like filter user Array',likeFilterUserArray)
         
 //         if (!user) {
 //             return res.status(404).json({ mssg: "User not found" });
@@ -123,11 +118,21 @@ exports.allUser = async (req , res) => {
 //         let interestUsers;
 
 //         if (userGender === 'Male') {
-//             // Find females with at least one similar interest
-//             interestUsers = await authUser.find({ gender: 'Female', interest: { $in: userInterests } });
+//             // Find females with at least one similar interest and not in filterUserArray or likeFilterUserArray
+//             interestUsers = await authUser.find({ 
+//                 gender: 'Female', 
+//                 interest: { $in: userInterests },
+//                 // _id: { $nin: filterUserArray } // Exclude IDs in filterUserArray
+//                 _id: { $nin: [...filterUserArray, ...likeFilterUserArray] } 
+//             });
 //         } else if (userGender === 'Female') {
-//             // Find males with at least one similar interest
-//             interestUsers = await authUser.find({ gender: 'Male', interest: { $in: userInterests } });
+//             // Find males with at least one similar interest and not in filterUserArray or likeFilterUserArray
+//             interestUsers = await authUser.find({ 
+//                 gender: 'Male', 
+//                 interest: { $in: userInterests },
+//                 // _id: { $nin: filterUserArray } // Exclude IDs in filterUserArray
+//                 _id: { $nin: [...filterUserArray, ...likeFilterUserArray] } 
+//             });
 //         } else {
 //             return res.status(400).json({ mssg: "Invalid gender" });
 //         }
@@ -137,60 +142,65 @@ exports.allUser = async (req , res) => {
 //         }
         
 //         res.json({ interestUsers });
+//         console.log('interest user is',interestUsers)
 //     } catch (error) {
 //         res.status(500).json({ mssg: "Internal server error" });
 //     }
-// }
+// };
 
-
-exports.getFilterUser = async (req, res) => { // now show all updated user on the basis of gender and not show like and ulike user 
-    try {                                     // on the basis of id
+exports.getFilterUser = async (req, res) => {
+    try {
         const userId = req.params.id; // Assuming the user ID is passed as a parameter in the URL
-        console.log('get filter data',userId) // login user id
+        console.log('get filter data', userId); // login user id
+
         // Find the user with the specified ID
         const user = await authUser.findById(userId);
-        const filterUserArray = user.filterData;
-        console.log('filter user array ', filterUserArray);
+        console.log('user is data', user);
 
-        const likeFilterUserArray=user.likeFilterData
-        console.log('like filter user Array',likeFilterUserArray)
-        
         if (!user) {
             return res.status(404).json({ mssg: "User not found" });
         }
 
+        const filterUserArray = user.filterData;
+        console.log('filter user array ', filterUserArray);
+
+        const likeFilterUserArray = user.likeFilterData;
+        console.log('like filter user array', likeFilterUserArray);
+
         const userInterests = user.interest; // Get interests of the user
         const userGender = user.gender;
+        const userCity = user.city; // Get city of the user
         console.log('gender is', userGender);
+        console.log('city is', userCity);
 
         let interestUsers;
 
         if (userGender === 'Male') {
-            // Find females with at least one similar interest and not in filterUserArray or likeFilterUserArray
+            // Find females with at least one similar interest, matching city, and not in filterUserArray or likeFilterUserArray
             interestUsers = await authUser.find({ 
                 gender: 'Female', 
                 interest: { $in: userInterests },
-                // _id: { $nin: filterUserArray } // Exclude IDs in filterUserArray
-                _id: { $nin: [...filterUserArray, ...likeFilterUserArray] } 
+                city: userCity,
+                _id: { $nin: [...filterUserArray, ...likeFilterUserArray] }
             });
         } else if (userGender === 'Female') {
-            // Find males with at least one similar interest and not in filterUserArray or likeFilterUserArray
+            // Find males with at least one similar interest, matching city, and not in filterUserArray or likeFilterUserArray
             interestUsers = await authUser.find({ 
                 gender: 'Male', 
                 interest: { $in: userInterests },
-                // _id: { $nin: filterUserArray } // Exclude IDs in filterUserArray
-                _id: { $nin: [...filterUserArray, ...likeFilterUserArray] } 
+                city: userCity,
+                _id: { $nin: [...filterUserArray, ...likeFilterUserArray] }
             });
         } else {
             return res.status(400).json({ mssg: "Invalid gender" });
         }
 
         if (!interestUsers || interestUsers.length === 0) {
-            return res.status(404).json({ mssg: "No users found with matching interest" });
+            return res.status(404).json({ mssg: "No users found with matching interest and city" });
         }
-        
+
         res.json({ interestUsers });
-        console.log('interest user is',interestUsers)
+        console.log('interest user is', interestUsers);
     } catch (error) {
         res.status(500).json({ mssg: "Internal server error" });
     }
@@ -617,16 +627,23 @@ exports.addNotifyUser = async (req, res) => {
   exports.addLikeCounterUser = async (req, res) => {
     try {
       const id = req.params.id;
-      const userId=req.body.userId
+      const userId = req.body.userId;
       const userObj = await authUser.findById(userId);
-      // console.log('user data obj',userObj)
+  
       if (userObj) {
-        userObj.likeCounter = userObj.likeCounter ? userObj.likeCounter + 1 : 1; // Incrementing the counter value
-        await userObj.save(); // Saving the updated userObj
-        console.log(' add like count Updated userObj:', userObj);
-        res.status(200).send({ message: 'Like Counter incremented successfully', userObj });
+        // Check if the id is present in the visitors array
+        const isVisitor = userObj.visitors && userObj.visitors.includes(id);
+  
+        if (!isVisitor) {
+          userObj.likeCounter = userObj.likeCounter ? userObj.likeCounter + 1 : 1; // Incrementing the counter value
+          await userObj.save(); // Saving the updated userObj
+          console.log(' add like count Updated userObj:', userObj);
+          res.status(200).send({ message: 'Like Counter incremented successfully', userObj });
+        } else {
+          console.log('User is a visitor, like counter not incremented');
+          res.status(200).send({ message: 'User is a visitor, like counter not incremented', userObj });
+        }
       } else {
-        
         res.status(404).send({ message: 'User not found' });
       }
     } catch (error) {
@@ -634,7 +651,7 @@ exports.addNotifyUser = async (req, res) => {
       res.status(500).send({ message: 'Internal server error' });
     }
   };
-
+  
   exports.getLikeCounterUser=async(req,res)=>{
     try{
         const userId = req.params.id; 
@@ -791,6 +808,10 @@ exports.addMatchUser = async (req, res) => {
 
         if (!userObj && !anotherUserObj) {
             return res.status(404).json({ mssg: "User not found" });
+        }
+
+        if (anotherUserObj.visitors.includes(loginId)) {
+            anotherUserObj.counter = (anotherUserObj.counter || 0) + 1;
         }
         const index = anotherUserObj. likeUser.indexOf(loginId);
         if (index > -1) {
