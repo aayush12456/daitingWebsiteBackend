@@ -193,7 +193,12 @@ matchNotify:{ //to store id of loginUser
       ref:'UserData'
     }
   ],
-  
+  hideRemainMatch:[
+    {
+      type:Schema.Types.ObjectId,
+      ref:'UserData'
+    }
+  ]
 },
 {
   timestamps : true

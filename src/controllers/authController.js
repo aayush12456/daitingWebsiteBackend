@@ -148,6 +148,67 @@ exports.allUser = async (req, res) => {
 //     }
 // };
 
+// exports.getFilterUser = async (req, res) => {
+//     try {
+//         const userId = req.params.id; // Assuming the user ID is passed as a parameter in the URL
+//         console.log('get filter data', userId); // login user id
+
+//         // Find the user with the specified ID
+//         const user = await authUser.findById(userId);
+//         console.log('user is data', user);
+
+//         if (!user) {
+//             return res.status(404).json({ mssg: "User not found" });
+//         }
+
+//         const filterUserArray = user.filterData;
+//         console.log('filter user array ', filterUserArray);
+
+//         const likeFilterUserArray = user.likeFilterData;
+//         console.log('like filter user array', likeFilterUserArray);
+
+//         const userInterests = user.interest; // Get interests of the user
+//         const userGender = user.gender;
+//         const userCity = user.city; // Get city of the user
+//         console.log('gender is', userGender);
+//         console.log('city is', userCity);
+//        const hideRemainMatchArray=user.hideRemainMatch
+//        const hideRemainMatchUsers = await authUser.find({
+//         _id: { $in: hideRemainMatchArray }
+//     });
+//         let interestUsers;
+        
+//         if (userGender === 'Male') {
+//             // Find females with at least one similar interest, matching city, and not in filterUserArray or likeFilterUserArray
+//             interestUsers = await authUser.find({ 
+//                 gender: 'Female', 
+//                 interest: { $in: userInterests },
+//                 city: userCity,
+//                 _id: { $nin: [...filterUserArray, ...likeFilterUserArray] }
+//             });
+//         } else if (userGender === 'Female') {
+//             // Find males with at least one similar interest, matching city, and not in filterUserArray or likeFilterUserArray
+//             interestUsers = await authUser.find({ 
+//                 gender: 'Male', 
+//                 interest: { $in: userInterests },
+//                 city: userCity,
+//                 _id: { $nin: [...filterUserArray, ...likeFilterUserArray] }
+//             });
+//         } else {
+//             return res.status(400).json({ mssg: "Invalid gender" });
+//         }
+
+//         if (!interestUsers || interestUsers.length === 0) {
+//             return res.status(404).json({ mssg: "No users found with matching interest and city" });
+//         }
+
+//         res.json({ interestUsers });
+//         console.log('interest user is', interestUsers);
+//     } catch (error) {
+//         res.status(500).json({ mssg: "Internal server error" });
+//     }
+// };
+
 exports.getFilterUser = async (req, res) => {
     try {
         const userId = req.params.id; // Assuming the user ID is passed as a parameter in the URL
@@ -173,8 +234,17 @@ exports.getFilterUser = async (req, res) => {
         console.log('gender is', userGender);
         console.log('city is', userCity);
 
-        let interestUsers;
+        const hideRemainMatchArray = user.hideRemainMatch;
+        console.log('hide remain match array', hideRemainMatchArray);
 
+        // Fetch the full user objects for the IDs in hideRemainMatchArray
+        const hideRemainMatchUsers = await authUser.find({
+            _id: { $in: hideRemainMatchArray }
+        });
+        console.log('hide remain match users', hideRemainMatchUsers);
+
+        let interestUsers;
+        
         if (userGender === 'Male') {
             // Find females with at least one similar interest, matching city, and not in filterUserArray or likeFilterUserArray
             interestUsers = await authUser.find({ 
@@ -199,12 +269,17 @@ exports.getFilterUser = async (req, res) => {
             return res.status(404).json({ mssg: "No users found with matching interest and city" });
         }
 
+        // Filter out users from interestUsers who are in hideRemainMatchUsers
+        const hideRemainMatchUserIds = hideRemainMatchUsers.map(user => user._id.toString());
+        interestUsers = interestUsers.filter(user => !hideRemainMatchUserIds.includes(user._id.toString()));
+
         res.json({ interestUsers });
         console.log('interest user is', interestUsers);
     } catch (error) {
         res.status(500).json({ mssg: "Internal server error" });
     }
 };
+
 
 exports.addFilterUser = async (req, res) => { // if you want to unlike user that unlike user id store in a database with the help of these func
     try {
@@ -352,6 +427,7 @@ exports.addLikesUser = async (req, res) => {
 
         // If likeUserId is not present in visitors, add it to likes
         userObj.likes.push(likesUserId);
+        userObj.hideRemainMatch.push(likesUserId)
         const likeUser = await userObj.save();
         res.json({ likes: likeUser });
 
