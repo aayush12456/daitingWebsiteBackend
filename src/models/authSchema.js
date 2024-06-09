@@ -134,12 +134,20 @@ images: [{
       ref:'UserData'
     }
   ],
-  visitors:[ // schema for visitor user id
+  
+  // visitors:[ // schema for visitor user id
+  //   {
+  //     type:Schema.Types.ObjectId,
+  //     ref:'UserData',
+ 
+  //   }
+  // ],
+  visitors: [
     {
-      type:Schema.Types.ObjectId,
-      ref:'UserData'
+        visitorId: { type: mongoose.Schema.Types.ObjectId, ref: 'authUser' },
+        visitedAt: { type: Date, default: Date.now }
     }
-  ],
+],
   likes:[ // schema for like user id
     {
       type:Schema.Types.ObjectId,
@@ -183,7 +191,12 @@ anotherMatchData:[ // to store id of loginUser
   ref:'UserData'
 }
 ],
-
+anotherLikeUser:[
+  {
+    type:Schema.Types.ObjectId,
+    ref:'UserData'
+  }
+],
 matchNotify:{ //to store id of loginUser
   type:String
 },
@@ -194,6 +207,25 @@ matchNotify:{ //to store id of loginUser
     }
   ],
   hideRemainMatch:[
+    {
+      type:Schema.Types.ObjectId,
+      ref:'UserData'
+    }
+  ],
+
+  onlineLikeUser:[
+    {
+      type:Schema.Types.ObjectId,
+      ref:'UserData'
+    }
+  ],
+  likeMatch:[
+    {
+      type:Schema.Types.ObjectId,
+      ref:'UserData'
+    }
+  ],
+  anotherlikeMatch:[
     {
       type:Schema.Types.ObjectId,
       ref:'UserData'

@@ -53,4 +53,7 @@ router.post('/addVisitorPlusSkipUser/:id', userController.addVisitorPlusSkipUser
 router.get('/getVisitorPlusSkipUser/:id', userController.getVisitorPlusSkipUser);
 router.post('/addMatchUser/:id', userController.addMatchUser);
 router.get('/getMatchUser/:id', userController.getMatchUser);
+// router.post('/addOnlineUser/:id', userController.addOnlineUser);
+// router.get('/getOnlineUser/:id', userController.getOnlineUser);
+// router.post('/addLikeMatch/:id', userController.addLikeMatchUser);
 module.exports = router;
