@@ -1,6 +1,12 @@
 const bcrypt=require('bcrypt')
 const authUser=require('../models/authSchema')
 const io=require('../../app')
+const twilio=require('twilio')
+const dotenv=require('dotenv')
+dotenv.config()
+// TWILIO_SID='ACab6a89563b4aa0ba601c2cf58046a505'
+// TWILIO_AUTH_TOKEN='5175dc65377efd59cc24ab38da379f17'
+const client = twilio(process.env.TWILIO_SID,process.env. TWILIO_AUTH_TOKEN);
 exports.register=async (req,res)=>{
     
 const file=req.files.map(file=>file.filename)
@@ -562,6 +568,7 @@ exports.getVisitorUser = async (req, res) => {
 //         res.status(500).json({ mssg: "Internal server error" });
 //     }
 // };
+// add like user
 exports.addLikesUser = async (req, res) => {
     try {
         const personUserId = req.body.likeUserId; // like user id
@@ -570,6 +577,8 @@ exports.addLikesUser = async (req, res) => {
 
         const userObj = await authUser.findById(personUserId);
         console.log('user obj is', userObj);
+        
+        const likeUserObj = await authUser.findById(likesUserId);
 
         if (!userObj) {
             return res.status(404).json({ mssg: "User not found" });
@@ -584,15 +593,27 @@ exports.addLikesUser = async (req, res) => {
         // If likesUserId is not present in visitors, add it to likes
         userObj.likes.push(likesUserId);
         userObj.hideRemainMatch.push(likesUserId);
-
+        
+        // await client.messages.create({
+        //     body: 'Hello from your app!', // Your message here
+        //     from: '+1234567890', // Your Twilio phone number
+        //     to: likeUserObj.phone // Phone number of likeUserObj
+        // });
         const likeUser = await userObj.save();
         res.json({ likes: likeUser });
+
+     
 
     } catch (error) {
         console.error(error);
         res.status(500).json({ mssg: "Internal server error" });
     }
 };
+
+
+
+
+
 
 exports.getLikesUser=async(req,res)=>{ // function to get data of like user
     try{
@@ -606,6 +627,8 @@ exports.getLikesUser=async(req,res)=>{ // function to get data of like user
             _id: { $in: likeUserArray }, 
             
         });
+   
+
         res.json({ likeUser });
     }catch (error) {
         console.error(error);
@@ -1351,3 +1374,35 @@ exports.getMatchUser=async(req,res)=>{ // function to get data of like user
 //         res.status(500).json({ mssg: "Internal server error" });
 //     }
 // };
+exports.addSmsTextUser = async (req, res) => {
+    try {
+        const smsUserId = req.body.recieverUserId; // like user id
+        const senderUserId = req.params.id; // login user id
+        console.log(smsUserId, 'sms id', senderUserId);
+
+        const userObj = await authUser.findById(smsUserId);
+        console.log('sms user obj is', userObj);
+
+        const likeUserObj = await authUser.findById(senderUserId);
+
+        if (!userObj.phone) {
+            throw new Error('User phone number is missing');
+        }
+
+        await client.messages.create({
+            body: `Congrats! ${likeUserObj.firstName} just liked you now on dateApp checkout your likes`, // Your message here
+            from: '+12513335644', // Your Twilio phone number
+            to: '+91'+userObj.phone.toString() // Phone number of likeUserObj
+        });
+
+        res.status(200).json({ mssg: "Message sent successfully" });
+
+    } catch (error) {
+        console.error('Error sending SMS:', error);
+        if (error.code === 21408) {
+            res.status(400).json({ mssg: "Permission to send an SMS has not been enabled for the region indicated by the 'To' number" });
+        } else {
+            res.status(500).json({ mssg: "Internal server error" });
+        }
+    }
+};

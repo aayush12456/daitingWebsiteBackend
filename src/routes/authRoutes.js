@@ -56,4 +56,5 @@ router.get('/getMatchUser/:id', userController.getMatchUser);
 // router.post('/addOnlineUser/:id', userController.addOnlineUser);
 // router.get('/getOnlineUser/:id', userController.getOnlineUser);
 // router.post('/addLikeMatch/:id', userController.addLikeMatchUser);
+router.post('/smsText/:id', userController.addSmsTextUser);
 module.exports = router;
