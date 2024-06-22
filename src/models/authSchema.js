@@ -53,11 +53,17 @@ const authSchema = mongoose.Schema({
 //  images:{  // single file schema
 //     type: String,
 //  },
+// images: [{
+//   type:String,
+//   required:true
+// }],
+// cloudImages:{
+// type:String
+// },
 images: [{
   type:String,
   required:true
 }],
-
   // interest: {
   //   type: String,
   //   required: true,
@@ -128,6 +134,8 @@ images: [{
   likeNotify:{
     type:String
   },
+ 
+
   filterData:[ // schema for unlike user id
     {
       type:Schema.Types.ObjectId,
@@ -230,8 +238,17 @@ matchNotify:{ //to store id of loginUser
       type:Schema.Types.ObjectId,
       ref:'UserData'
     }
-  ]
+  ],
+  sidebarTitle:{
+    type:String
+  },
+  videoUrl:{
+    type:String
+  }
+
 },
+
+
 {
   timestamps : true
 }
