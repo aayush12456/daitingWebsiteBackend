@@ -182,6 +182,7 @@ exports.login=async (req,res)=>{
     const password=req.body.password
     const userEmail=await authUser.findOne({email:email})
      const isMatch=await bcrypt.compare(password,userEmail.password)
+     console.log('password login data',isMatch)
      const token = await userEmail.generateAuthToken();
      console.log('login token is',token)
      if(isMatch){
@@ -190,14 +191,15 @@ exports.login=async (req,res)=>{
       res.status(201).send({mssg:'Login Successfully',response:201,loginData:{email:email,password:password},token:token,userId:userEmail._id,completeData:data})
     }
     else{
-        res.status(400).send({mssg:"invalid password",response:400 }) 
+        res.status(400).send({mssg:"wrong password",response:400 }) 
         return 
             }
             if(!userEmail){
                    res.status(400).send({mssg:"email does not exist"})
+                   return
              }
     }catch(e){
-        res.status(400).send({mssg:"Data does not match",response:400})
+        res.status(400).send({mssg:"Wrong login details. Please try again.",response:400})
     }
 }
 
@@ -215,6 +217,9 @@ exports.allUser = async (req, res) => {
         const gender = user.gender;
         const visitors = user.visitors.map(visitor => visitor.visitorId.toString()); // Assuming visitors is an array of ObjectIds
         const likes = user.likes.map(like => like.toString());
+        const onlineSkipUser=user.onlineSkipUser.map(onlineSkip=>onlineSkip.toString())
+        const onlineLikeUser=user.onlineLikeUser.map(onlineLike=>onlineLike.toString())
+        const deactivatedUser=user.deactivatedIdArray.map(deactivateUser=>deactivateUser.toString())
         const users = await authUser.find();
 
         // Filter out users with the same city and opposite gender
@@ -229,7 +234,9 @@ exports.allUser = async (req, res) => {
         // Remove users from filteredUsers if they are present in the visitors array
         filteredUsers = filteredUsers.filter(u => !visitors.includes(u._id.toString()));
         filteredUsers = filteredUsers.filter(u => !likes.includes(u._id.toString()));
-
+        filteredUsers = filteredUsers.filter(u => !onlineSkipUser.includes(u._id.toString()));
+        filteredUsers = filteredUsers.filter(u => !onlineLikeUser.includes(u._id.toString()));
+        filteredUsers = filteredUsers.filter(u => ! deactivatedUser.includes(u._id.toString()));
         res.json({
             users: filteredUsers
         });
@@ -445,7 +452,7 @@ exports.addFilterUser = async (req, res) => { // if you want to unlike user that
         // Save the updated user object
         const updatedUser = await userObj.save();
 
-        res.json({ user: updatedUser });
+        res.json({ user: updatedUser,crossUserId:addUserId });
     } catch (error) {
         console.error(error);
         res.status(500).json({ mssg: "Internal server error" });
@@ -655,6 +662,7 @@ const formatTimeDifference = (date) => {
 // Example usage
 const visitDate = new Date('2024-06-08T10:00:00Z');
 console.log('format date', formatTimeDifference(visitDate));
+
 exports.getVisitorUser = async (req, res) => {
     try {
         const userId = req.params.id; // login user id
@@ -668,7 +676,7 @@ exports.getVisitorUser = async (req, res) => {
         const getVisitors = await authUser.find({ _id: { $in: visitorUserArray } });
 
         // Combine visitor details with the formatted time
-        const visitorsWithTime = user.visitors.map(visitor => {
+        let visitorsWithTime = user.visitors.map(visitor => {
             const visitorInfo = getVisitors.find(u => u._id.toString() === visitor.visitorId.toString());
             return {
                 visitor: visitorInfo,
@@ -676,12 +684,20 @@ exports.getVisitorUser = async (req, res) => {
             };
         });
 
+        // Filter out visitors who are in user.onlineLikeUser array
+        visitorsWithTime = visitorsWithTime.filter(visitorWithTime => {
+            return !user.onlineLikeUser.some(onlineLikeUserId => onlineLikeUserId.toString() === visitorWithTime.visitor._id.toString());
+        });
+        visitorsWithTime = visitorsWithTime.filter(visitorWithTime => {
+            return !user.deactivatedIdArray.some(deactivateUserId => deactivateUserId.toString() === visitorWithTime.visitor._id.toString());
+        });
         res.json({ visitors: visitorsWithTime });
     } catch (error) {
         console.error(error);
         res.status(500).json({ mssg: "Internal server error" });
     }
 };
+
 // exports.addLikesUser=async(req,res)=>{ // function to store login user id in a like user
 //     try{
 //         const personUserId=req.body.likeUserId // like user id
@@ -783,14 +799,19 @@ exports.getLikesUser=async(req,res)=>{ // function to get data of like user
         const userId = req.params.id; // login user id
         const user = await authUser.findById(userId);
         console.log('user is',user)
-        const likeUserArray=user.likes
+        let likeUserArray
+         likeUserArray=user.likes
+        const deactivateUserArray=user.deactivatedIdArray
+        likeUserArray = likeUserArray.filter(likeUserId => {
+            return !deactivateUserArray.some(deactivateUserId => deactivateUserId .toString() === likeUserId.toString());
+        });
         console.log('visitors is',likeUserArray)
         let likeUser;
         likeUser = await authUser.find({  
             _id: { $in: likeUserArray }, 
             
         });
-   
+      
 
         res.json({ likeUser });
     }catch (error) {
@@ -969,17 +990,32 @@ exports.deleteCounterUser = async (req, res) => {
 exports.addNotifyUser = async (req, res) => {
     try {
       const id = req.params.id;
-      const userId=req.body.userId
+      const userId = req.body.userId;
       const userObj = await authUser.findById(userId);
-      userObj.notify=id
-      await userObj.save()
-      res.status(200).send({ message: 'notify user updated',user:userObj });
+  
+      if (!userObj) {
+        return res.status(404).send({ message: 'User not found' });
+      }
+  
+      // Check if the visitors array in userObj contains an entry where visitorId matches id
+      const visitorMatch = userObj.visitors.some(visitor => visitor.visitorId.toString() === id.toString());
+      const anotherVisitorMatch = userObj.onlineLikeUser.some(onlineLike => onlineLike.toString() === id.toString());
+     
+      if (visitorMatch || anotherVisitorMatch) {
+        userObj.notify = null; // Clear the notification
+      } else {
+        userObj.notify = id; // Set the notification to the provided id
+      }
+  
+      await userObj.save();
+  
+      res.status(200).send({ message: 'Notify user updated', user: userObj });
     } catch (error) {
       console.error('Error:', error);
       res.status(500).send({ message: 'Internal server error' });
     }
   };
-
+  
   exports.getNotifyUser = async (req, res) => {
     try {
       const userId = req.params.id; 
@@ -990,6 +1026,7 @@ exports.addNotifyUser = async (req, res) => {
         return res.status(404).send({ message: 'User not found' });
       }
      const obj=await authUser.findById(user.notify)
+  
       // Respond with the user's notification data
       res.status(200).send({data:obj});
       setTimeout(async () => {
@@ -1349,6 +1386,18 @@ exports.getMatchUser=async(req,res)=>{ // function to get data of like user
         console.log(' get match data is',getMatchUserArray)
         const anothergetMatchUserData=user.anotherMatchData
         const obj=await authUser.findById(user.matchNotify)
+
+        const deactivateUserArray=user.deactivatedIdArray
+        // getMatchUserArray= getMatchUserArray.filter(getMatchUserId => {
+        //     return !deactivateUserArray.some(deactivateUserId => deactivateUserId .toString() === getMatchUserId.toString());
+        // });
+
+        // anothergetMatchUserArray= anothergetMatchUserArray.filter(anothergetMatchUserId => {
+        //     return !deactivateUserArray.some(deactivateUserId => deactivateUserId .toString() === anothergetMatchUserId.toString());
+        // });
+        // anothergetMatchUserData= anothergetMatchUserData.filter(anothergetMatchUserDataId => {
+        //     return !deactivateUserArray.some(deactivateUserId => deactivateUserId .toString() === anothergetMatchUserDataId.toString());
+        // });
         let matchUser;
         matchUser = await authUser.find({  
             _id: { $in: getMatchUserArray }, 
@@ -1579,6 +1628,11 @@ exports.addVisitorSendEmailUser = async (req, res) => {
         console.log('sender user obj is', userObj);
 
         const likeUserObj = await authUser.findById(loginEmailId);
+        const userObjSendMail = userObj.visitors.some(visitor => visitor.visitorId.toString() === loginEmailId.toString());
+        if (userObjSendMail) {
+            return res.status(200).json({ message: 'Email not sent as the visitor already exists.' });
+          }
+      
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
@@ -1656,6 +1710,7 @@ exports.addSidebarAvailable = async (req, res) => {
       const title=req.body.sidebarTitle
       const userObj = await authUser.findById(id);
       userObj.sidebarTitle=title
+      userObj.PersonalProfileModalHeading=""
       await userObj.save()
       res.status(200).send({ message: 'sidebar obj',user:userObj });
     } catch (error) {
@@ -1667,7 +1722,6 @@ exports.addSidebarAvailable = async (req, res) => {
     try {
       const id = req.params.id;
       const userObj = await authUser.findById(id);
-      await userObj.save()
       res.status(200).send({ message: 'get sidebar obj',user:userObj });
     } catch (error) {
       console.error('Error:', error);
@@ -1675,3 +1729,459 @@ exports.addSidebarAvailable = async (req, res) => {
     }
   };
 
+exports.addPersonalProfileModalHeading=async(req,res)=>{
+try{
+    const id = req.params.id;
+    const title=req.body.PersonalProfileModalHeading
+    const userObj = await authUser.findById(id);
+    userObj.PersonalProfileModalHeading=title
+    userObj.sidebarTitle=""
+    await userObj.save()
+    res.status(200).send({ message: 'personal profile modal heading obj',user:userObj });
+
+}catch(error){
+    console.error('Error:', error);
+    res.status(500).send({ message: 'Internal server error' });
+}
+}
+exports.getPersonalProfileModalHeading = async (req, res) => {
+    try {
+      const id = req.params.id;
+      const userObj = await authUser.findById(id);
+      await userObj.save()
+      res.status(200).send({ message: 'get personal profile modal heading obj',user:userObj });
+    } catch (error) {
+      console.error('Error:', error);
+      res.status(500).send({ message: 'Internal server error' });
+    }
+  };
+  exports.addOnlineSkipUser=async(req,res)=>{ // function to store login user id in a like user
+    try{
+        const onlinePersonUserId=req.body.onlinePersonSkipUserId // like user id
+        const loginUserId = req.params.id; // login user id
+        console.log(loginUserId, 'onlinePlusSkip',onlinePersonUserId)
+        const userObj = await authUser.findById(loginUserId);
+        if (!userObj) {
+                 return res.status(404).json({ mssg: "User not found" });
+             }
+             userObj.onlineSkipUser.push(onlinePersonUserId)
+             const onlinePersonSkipUser=await userObj.save()
+             console.log('online person skip',onlinePersonSkipUser)
+             res.json({onlineSkip:onlinePersonSkipUser})
+
+    }catch (error) {
+        console.error(error);
+        res.status(500).json({ mssg: "Internal server error" });
+    }
+}
+exports.addOnlineLikeUser=async(req,res)=>{ // function to store login user id in a like user
+    try{
+        const onlinePersonLikeUserId=req.body.onlinePersonLikeUserId // like user id
+        const loginUserId = req.params.id; // login user id
+        console.log(loginUserId, 'onlinePlusSkip',onlinePersonLikeUserId)
+        const userObj = await authUser.findById(loginUserId);
+        const anotherUserObj = await authUser.findById(onlinePersonLikeUserId)
+        if (!userObj) {
+                 return res.status(404).json({ mssg: "User not found" });
+             }
+             userObj.selfOnlineLikeUser.push(onlinePersonLikeUserId)
+             anotherUserObj.onlineLikeUser.push(loginUserId)
+            //  anotherUserObj.visitors = anotherUserObj.visitors.filter(anotherVisitor => anotherVisitor.visitorId !== loginUserId);
+             const onlinePersonLikeUser=await userObj.save()
+             const anotherOnlinePersonLikeUser=await anotherUserObj.save()
+             console.log('online person skip',onlinePersonLikeUser)
+             res.json({onlineLike:onlinePersonLikeUser,anotherOnlineLike:anotherOnlinePersonLikeUser})
+
+    }catch (error) {
+        console.error(error);
+        res.status(500).json({ mssg: "Internal server error" });
+    }
+}
+
+// exports.getOnlineLikeUser = async (req, res) => {
+//     try {
+//         const userId = req.params.id; // login user id
+//         const user = await authUser.findById(userId);
+        
+//         if (!user) {
+//             return res.status(404).json({ mssg: "User not found" });
+//         }
+        
+//         const onlineLikeUserArray = user.onlineLikeUser;
+//         const onlineLikeUserData = await authUser.find({ _id: { $in: onlineLikeUserArray } });
+
+//         const selfOnlineLikeUserArray = user.selfOnlineLikeUser;
+//         const selfOnlineLikeUserData = await authUser.find({ _id: { $in: selfOnlineLikeUserArray } });
+
+//         // Remove visitors that are also in selfOnlineLikeUserArray
+//         user.visitors = user.visitors.filter(visitor => 
+//             !onlineLikeUserArray.includes(visitor.visitorId)
+//         );
+
+//        const deactivateUserArray=user.deactivatedIdArray
+//        onlineLikeUserData = onlineLikeUserData.filter(onlineLikeUserId => {
+//            return !deactivateUserArray.some(deactivateUserId => deactivateUserId .toString() === onlineLikeUserId.toString());
+//        });
+//          console.log('visitors of like User',user.visitors)
+//         // Save the updated user object
+//         await user.save();
+
+//         res.json({ onlineLikeUser: onlineLikeUserData, selfOnlineLikeUser: selfOnlineLikeUserData });
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ mssg: "Internal server error" });
+//     }
+// };
+
+exports.getOnlineLikeUser = async (req, res) => {
+    try {
+        const userId = req.params.id; // login user id
+        const user = await authUser.findById(userId);
+        
+        if (!user) {
+            return res.status(404).json({ mssg: "User not found" });
+        }
+        
+        const onlineLikeUserArray = user.onlineLikeUser;
+        const onlineLikeUserData = await authUser.find({ _id: { $in: onlineLikeUserArray } });
+
+        const selfOnlineLikeUserArray = user.selfOnlineLikeUser;
+        const selfOnlineLikeUserData = await authUser.find({ _id: { $in: selfOnlineLikeUserArray } });
+
+        // Remove visitors that are also in selfOnlineLikeUserArray
+        user.visitors = user.visitors.filter(visitor => 
+            !onlineLikeUserArray.includes(visitor.visitorId)
+        );
+
+        const deactivateUserArray = user.deactivatedIdArray;
+        const filteredOnlineLikeUserData = onlineLikeUserData.filter(user => {
+            return !deactivateUserArray.includes(user._id.toString());
+        });
+        
+        console.log('visitors of like User', user.visitors);
+
+        // Save the updated user object
+        await user.save();
+
+        res.json({ onlineLikeUser: filteredOnlineLikeUserData, selfOnlineLikeUser: selfOnlineLikeUserData });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ mssg: "Internal server error" });
+    }
+};
+
+exports.skipProfileUser=async(req,res)=>{
+try{
+    const userId = req.params.id; // Assuming the user ID is passed as a parameter in the URL
+    console.log('get skip id', userId); // login user id
+
+    // Find the user with the specified ID
+    const user = await authUser.findById(userId);
+    console.log('get skip user is data', user);
+
+    if (!user) {
+        return res.status(404).json({ mssg: "User not found" });
+    }
+    const skipFilterProfileArray=user.filterData
+    const skipProfileArray=user.skipUser
+    const onlineSkipProfileArray=user.onlineSkipUser
+    let skipFilterUser;
+    skipFilterUser = await authUser.find({  
+        _id: { $in: skipFilterProfileArray }, 
+        
+    });
+    console.log('skip filter user',skipFilterUser)
+    let skipUser;
+    const deactivateUserArray=user.deactivatedIdArray
+    // skipProfileArray= skipProfileArray.filter(skipUserId => {
+    //     return !deactivateUserArray.some(deactivateUserId => deactivateUserId .toString() === skipUserId.toString());
+    // });
+    skipUser = await authUser.find({  
+        _id: { $in:  skipProfileArray }, 
+        
+    });
+    console.log('skip  user array',skipUser)
+    let onlineSkipUser;
+    onlineSkipUser = await authUser.find({  
+        _id: { $in:onlineSkipProfileArray }, 
+        
+    });
+   res.json({skipFilterUser:skipFilterUser,skipUser:skipUser,onlineSkipUser:onlineSkipUser})
+}catch(error){
+    console.error(error);
+        res.status(500).json({ mssg: "Internal server error" });
+}
+}
+// exports.deleteSkipProfileUser=async(req,res)=>{
+//     console.log('response of skip profile',req.body)
+// try{
+// const id=req.params.id
+// const deleteUserId=req.body.deleteUserId
+// console.log('delete user id',deleteUserId)
+// const user = await authUser.findById(id);
+// const onlineSkipUser=user.onlineSkipUser
+// console.log('get skip user is data', user);
+// if (!user) {
+//     return res.status(404).json({ mssg: "User not found" });
+// }
+// await authUser.updateMany( 
+//     { 'onlineSkipUser': deleteUserId },
+//     { $pull: { onlineSkipUser:deleteUserId } }
+//   );
+// }catch(error){
+//     console.error(error);
+//     res.status(500).json({ mssg: "Internal server error" });
+// }
+// }
+exports.deleteSkipProfileUser = async (req, res) => {
+    console.log('Response of skip profile:', req.body);
+    try {
+        const id = req.params.id;
+        const deleteUserId = req.query.deleteUserId;
+        console.log('Delete user ID:', deleteUserId);
+
+        const user = await authUser.findById(id);
+        if (!user) {
+            return res.status(404).json({ mssg: "User not found" });
+        }
+
+        console.log('User before deletion:', user);
+
+        // await authUser.updateOne( // keval single data delete karne ke liye
+        //     { _id: id },
+        //     { $pull: { onlineSkipUser: deleteUserId } }
+        // );
+        await authUser.updateOne(
+            { _id: id },
+            {
+              $pull: {
+                onlineSkipUser: deleteUserId,
+                filterData: deleteUserId
+              }
+            }
+        );
+        console.log('User after deletion:', await authUser.findById(id));
+
+        res.status(200).json({ mssg: "User updated successfully" ,deleteId:deleteUserId});
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ mssg: "Internal server error" });
+    }
+};
+
+// second
+exports.addUpdatePasswordUser = async (req, res) => {
+    try {
+      const id = req.params.id;
+      const currentPassword = req.body.currentPassword;
+      const updatePassword = req.body.confirmNewPassword;
+      console.log('update password is', currentPassword);
+  
+      const user = await authUser.findById(id);
+      if (!user) {
+        return res.status(404).json({ msg: "User not found" });
+      }
+  
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ msg: "Current password is incorrect" });
+      }
+  
+      // Update user's password and save
+      user.password = updatePassword; // Assign the new password
+      await user.save(); // This will trigger the pre-save hook in authSchema.js
+      console.log('New password set:', user.password);
+  
+      res.status(200).json({ msg: "Password updated successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ msg: "Internal server error" });
+    }
+  };
+
+//   exports.deleteProfileUser = async (req, res) => {
+//     try {
+//       const id = req.params.id;
+//       const deletedUser = await authUser.findByIdAndDelete(id);
+  
+//       if (!deletedUser) {
+//         return res.status(404).json({ msg: "User not found" });
+//       }
+     
+//       res.status(200).json({ msg: "User deleted successfully" });
+//     } catch (error) {
+//       console.error(error);
+//       res.status(500).json({ msg: "Internal server error" });
+//     }
+//   };
+
+exports.deleteProfileUser = async (req, res) => {
+    try {
+      const id = req.params.id;
+      const deletedUser = await authUser.findByIdAndDelete(id);
+  
+      if (!deletedUser) {
+        return res.status(404).json({ msg: "User not found" });
+      }
+  
+      // Remove the visitor object from the visitors array of all users where visitorId matches the deleted user's ID
+    //   await authUser.updateMany( // ye keval data delete karne ke liye
+    //     { 'visitors.visitorId': id },
+    //     { $pull: { visitors: { visitorId: id } } }
+    //   );
+    await authUser.updateMany(
+        {
+          $or: [
+            { 'visitors.visitorId': id },
+            { 'filterData': id },
+            { 'likes': id },
+            { 'likeFilterData': id },
+            { 'likeUser': id },
+            { 'skipUser': id },
+            { 'matchUser': id },
+            { 'anotherMatchUser': id },
+            { 'anotherMatchData': id },
+            { 'anotherLikeUser': id },
+            { 'hideRemainMatch': id },
+            { 'onlineLikeUser': id },
+            { 'likeMatch': id },
+            { 'anotherLikeMatch': id },
+            { 'onlineSkipUser': id },
+            { 'selfOnlineLikeUser': id }
+          ]
+        },
+        {
+          $pull: {
+            visitors: { visitorId: id },
+            filterData:id,
+            likes:id,
+            likeFilterData:id,
+            likeUser:id,
+            skipUser: id,
+            matchUser:id,
+            anotherMatchUser:id,
+            anotherMatchData:id,
+            anotherLikeUser:id,
+            hideRemainMatch:id,
+            onlineLikeUser:id,
+            likeMatch:id,
+            anotherLikeMatch:id,
+            onlineSkipUser:id,
+            selfOnlineLikeUser:id
+          }
+        }
+      );
+      res.status(200).json({ msg: "User deleted successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ msg: "Internal server error" });
+    }
+  };
+  exports.deactivationUser=async(req,res)=>{ // function to store login user id in a like user
+    try{
+        const loginUserId = req.params.id; // login user id
+        const deactivated=req.body.deactivate
+        const userObj = await authUser.findById(loginUserId);
+        if (!userObj) {
+                 return res.status(404).json({ mssg: "User not found" });
+             }
+        userObj.deactivation=deactivated
+        userObj.deactivatedId=loginUserId
+        const allUserArray=await authUser.find()
+        for(let data of allUserArray){
+            if (data._id.toString() === loginUserId) {
+                continue; // Skip if the current user's ID matches loginUserId
+              }
+            data.deactivatedIdArray.push(loginUserId)
+            await data.save(); 
+        }
+            
+      await userObj.save()
+      res.status(200).json({ msg: "User deacctivated successfully",deactivateHeading:deactivated })
+    }catch (error) {
+        console.error(error);
+        res.status(500).json({ mssg: "Internal server error" });
+    }
+}
+exports.getDeactivateUser = async (req, res) => {
+    try {
+        const userId = req.params.id; // login user id
+        const userObj = await authUser.findById(userId);
+        
+        if (!userObj) {
+            return res.status(404).json({ mssg: "User not found" });
+        }
+        
+       const deactivation=userObj.deactivation
+
+        res.json({deactivateHeading:deactivation});
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ mssg: "Internal server error" });
+    }
+};
+exports.getActivateUser = async (req, res) => {     
+    try {
+        const userId = req.params.id; // login user id
+        const userObj = await authUser.findById(userId);
+        
+        if (!userObj) {
+            return res.status(404).json({ mssg: "User not found" });
+        }
+        
+       userObj.deactivation=null
+  
+     
+       await authUser.updateMany( // ye keval data delete karne ke liye
+           { 'deactivatedIdArray': userId },
+           { $pull: { deactivatedIdArray:userId } }
+         );
+         await userObj.save()
+        
+        res.json({ msg: "User deactivate successfully",activateHeading:userObj});
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ mssg: "Internal server error" });
+    }
+};
+
+
+exports.addForgotUpdatePasswordUser = async (req, res) => {
+    try {
+   const phone=req.body.phoneNumber
+   const confirmPassword=req.body.confirmNewPassword
+   const forgotUpdateArray=await authUser.find()
+   console.log('forgot update array user',forgotUpdateArray)
+   const updatePasswordArray=forgotUpdateArray.filter((updateItem)=>updateItem.phone===phone)
+   console.log(' update array password user',updatePasswordArray)
+   if (updatePasswordArray.length > 0) {
+    const userToUpdate = updatePasswordArray[0];
+    console.log('User to update:', userToUpdate);
+    
+    // Update the user's password (assuming the user model has a method to update password)
+    userToUpdate.password = confirmPassword;
+    await userToUpdate.save(); // Save the updated user object
+
+    res.status(200).json({ msg: "Password updated successfully" });
+  } else {
+    res.status(404).json({ msg: "User not found" });
+  }
+     
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ msg: "Internal server error" });
+    }
+  };
+
+exports.compareNumber=async(req,res)=>{
+    try {
+       const obj=req.body
+       console.log('obj first is',obj)
+       const numberArray=await authUser.find()
+       console.log('number array is',numberArray)
+       res.status(200).json({ compareArray:numberArray });
+         } catch (error) {
+           console.error(error);
+           res.status(500).json({ msg: "Internal server error" });
+         }
+}

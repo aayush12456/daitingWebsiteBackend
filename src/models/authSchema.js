@@ -244,8 +244,40 @@ matchNotify:{ //to store id of loginUser
   },
   videoUrl:{
     type:String
+  },
+  PersonalProfileModalHeading:{
+    type:String
+  },
+onlineSkipUser:[
+  {
+    type:Schema.Types.ObjectId,
+    ref:'UserData'
   }
-
+],
+onlineLikeUser:[
+  {
+    type:Schema.Types.ObjectId,
+    ref:'UserData'
+  }
+],
+selfOnlineLikeUser:[
+  {
+    type:Schema.Types.ObjectId,
+    ref:'UserData'
+  }
+],
+deactivation:{
+  type:String
+},
+deactivatedId:{
+  type:String
+},
+deactivatedIdArray:[
+  {
+    type:Schema.Types.ObjectId,
+    ref:'UserData'
+  }
+],
 },
 
 

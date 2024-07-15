@@ -67,4 +67,18 @@ router.post('/visitorSendEmail/:id', userController.addVisitorSendEmailUser);
 router.post('/matchSendEmail/:id', userController.addMatchSendEmailUser);
 router.post('/sidebarAvailability/:id', userController.addSidebarAvailable);
 router.get('/getSidebarAvailability/:id', userController.getSidebarAvailable);
+router.post('/addPersonalProfileModalHeading/:id', userController.addPersonalProfileModalHeading);
+router.get('/getPersonalProfileModalHeading/:id', userController.getPersonalProfileModalHeading);
+router.post('/addOnlineSkipUser/:id', userController.addOnlineSkipUser);
+router.post('/addOnlineLikeUser/:id', userController.addOnlineLikeUser);
+router.get('/getOnlineLikeUser/:id', userController.getOnlineLikeUser);
+router.get('/skipProfileUser/:id', userController.skipProfileUser);
+router.delete('/deleteSkippedProfile/:id', userController.deleteSkipProfileUser); // delete skip profile id from an array
+router.post('/updatePasswordUser/:id', userController.addUpdatePasswordUser);
+router.delete('/deleteProfileUser/:id', userController.deleteProfileUser);
+router.post('/deactivateUser/:id', userController.deactivationUser);
+router.get('/getDeactivateUser/:id', userController.getDeactivateUser);
+router.delete('/getActivateUser/:id', userController.getActivateUser);
+router.post('/forgotUpdatePasswordUser', userController.addForgotUpdatePasswordUser);
+router.get('/compareNumber/:id', userController.compareNumber);
 module.exports = router;
