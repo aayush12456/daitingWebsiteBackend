@@ -32,6 +32,8 @@ router.use(express.static('public'));
 // router.post('/signup', upload.array('images', 4), userController.register); // Up to 4 images can be uploaded in a backend folder
 router.post('/signup', upload.fields([{ name: 'images', maxCount: 4 }, { name: 'videoUrl', maxCount: 1 }]), userController.register);
 router.post('/login', userController.login)
+router.post('/loginWithOtp', userController.loginWithOtp)
+router.post('/verifyOtp', userController.compareLoginWithOtp)
 router.get('/allUsers/:id', userController.allUser);
 router.get('/filterUsers/:id', userController.getFilterUser);
 router.post('/addFilterUser/:id',userController.addFilterUser)
@@ -81,4 +83,5 @@ router.get('/getDeactivateUser/:id', userController.getDeactivateUser);
 router.delete('/getActivateUser/:id', userController.getActivateUser);
 router.post('/forgotUpdatePasswordUser', userController.addForgotUpdatePasswordUser);
 router.get('/compareNumber/:id', userController.compareNumber);
+// router.get('/allLocalUser', userController.localAllUser);
 module.exports = router;

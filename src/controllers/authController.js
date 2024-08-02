@@ -2185,3 +2185,75 @@ exports.compareNumber=async(req,res)=>{
            res.status(500).json({ msg: "Internal server error" });
          }
 }
+// exports.localAllUser=async(req,res)=>{
+// try{
+//     const localAllData=await authUser.find()
+//     console.log('all data array',localAllData)
+//     res.status(200).json({ localArray:localAllData });
+// }catch(error){
+//     console.error(error);
+//     res.status(500).json({ msg: "Internal server error" });
+// }
+// }
+const generateRandomCode = () => {
+    return Math.floor(10000 + Math.random() * 90000).toString();
+};
+
+exports.loginWithOtp=async (req,res)=>{
+    try{
+     const phone=req.body.phone
+     const reset=req.body.reset
+     const allUser=await authUser.find()
+     console.log('all user is',allUser)
+     const filterPhoneObjArray=allUser.filter((userItem)=>userItem.phone==phone)
+     const filterPhoneObj=filterPhoneObjArray[0]
+     if(!filterPhoneObj){
+        res.status(400).send({mssg:"please verify phone number"})
+        return
+  }
+  
+  const randomCode = generateRandomCode(); 
+  let message=''
+  if(reset=='Reset Password'){
+    message=`Your reset Password OTP is ${randomCode}`
+  }
+  else{
+    message=`Your Login OTP is ${randomCode}`
+  }
+  await client.messages.create({
+    body:message,
+    from: '+12513335644', // Your Twilio phone number
+    to: '+91'+filterPhoneObj.phone.toString() // Phone number of likeUserObj
+});
+filterPhoneObj.otp=randomCode
+    await filterPhoneObj.save();
+      res.status(201).send({mssg:'Login Successfully',otp:randomCode,phoneNumber:filterPhoneObj.phone})
+    
+   
+    }catch(e){
+        res.status(400).send({mssg:"Wrong login details. Please try again.",response:400})
+    }
+}
+exports.compareLoginWithOtp=async (req,res)=>{
+    try{
+     const OTP=req.body.otp
+     const allUser=await authUser.find()
+     console.log('all user is',allUser)
+     const OTPPhoneObjArray=allUser.filter((userItem)=>userItem.otp==OTP)
+     const OTPPhoneObj=OTPPhoneObjArray[0]
+     if(!OTPPhoneObj){
+        res.status(400).send({mssg:"OTP does not match"})
+        return
+  }
+     
+     const token = await OTPPhoneObj.generateAuthToken();
+     console.log('login token is',token)
+     OTPPhoneObj.otp=''
+     await OTPPhoneObj.save()
+      res.status(201).send({mssg:'Login Successfully',token:token,userId:OTPPhoneObj._id,completeData:OTPPhoneObj,loginData:{email:OTPPhoneObj.email}})
+    
+   
+    }catch(e){
+        res.status(400).send({mssg:"Wrong login details. Please try again.",response:400})
+    }
+}

@@ -278,6 +278,9 @@ deactivatedIdArray:[
     ref:'UserData'
   }
 ],
+otp:{
+  type:String
+},
 },
 
 
