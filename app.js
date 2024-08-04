@@ -42,6 +42,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use('/images', express.static(path.join(__dirname, 'public', 'uploads')));
+app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use('/user', userRoutes);
 app.use('/chat',chatRoutes)
 app.use('/message',messageRoutes)

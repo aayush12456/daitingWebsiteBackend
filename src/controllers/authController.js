@@ -6,6 +6,8 @@ const io=require('../../app')
 const twilio=require('twilio')
 const nodemailer = require('nodemailer');
 const dotenv=require('dotenv')
+// const holdingHand=require('../../src/assets/holdingHands.png')
+// const love=require('../../assets/love')
 dotenv.config()
 const client = twilio(process.env.TWILIO_SID,process.env. TWILIO_AUTH_TOKEN);
 cloudinary.config({ 
@@ -1602,7 +1604,7 @@ exports.addSmsTextUser = async (req, res) => {
         }
 
         await client.messages.create({
-            body: `Congrats! ${likeUserObj.firstName} just liked you now on dateApp checkout your likes`, // Your message here
+            body: `Congrats! ${likeUserObj.firstName} just liked you now on ApnaPan checkout your likes`, // Your message here
             from: '+12513335644', // Your Twilio phone number
             to: '+91'+userObj.phone.toString() // Phone number of likeUserObj
         });
@@ -1636,17 +1638,17 @@ exports.addVisitorSendEmailUser = async (req, res) => {
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                user: 'aayushtapadia2001@gmail.com',
-                pass: 'mlglvlgvtmcezwsr'
+                user: 'apnapan96@gmail.com',
+                pass: 'nmhlhhjvahmjqmlz'
             }
         });
 
         // Set up email options
         const mailOptions = {
-            from: 'aayushtapadia2001@gmail.com',
+            from: 'apnapan96@gmail.com',
             to: userObj.email,
             subject: `Hey ${userObj.firstName} - there was a new visitor on your profile. Check them out`,
-            html: `<h1 style="text-Align:center; font-size:30px;font-weight:bold">Date App</h1>
+            html: `<h1 style="text-Align:center; font-size:30px;font-weight:bold">ApnaPan</h1>
             <hr style="color:grey;"/>
             <p style="padding-top:1rem;font-size:1.2rem">Hi ${userObj.firstName},</p>
             <p style="font-weight:bold; padding-top:1rem;font-size:1.2rem;color:black">${likeUserObj.firstName} <span style="font-weight:normal;">visited you / browse through your profile.Go check it out</span></p>
@@ -1677,15 +1679,15 @@ exports.addMatchSendEmailUser = async (req, res) => {
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                user: 'aayushtapadia2001@gmail.com',
-                pass: 'mlglvlgvtmcezwsr'
+                user: 'apnapan96@gmail.com',
+                pass: 'nmhlhhjvahmjqmlz'
             }
         });
         const mailOptions = {
-            from: 'aayushtapadia2001@gmail.com',
+            from: 'apnapan96@gmail.com',
             to: matchUserObj.email,
             subject: ` ${userObj.firstName} has paired with you mutually . View and respond`,
-            html: `<h1 style="text-Align:center; font-size:30px;font-weight:bold">Date App</h1>
+            html: `<h1 style="text-Align:center; font-size:30px;font-weight:bold">ApnaPan</h1>
             <hr style="color:grey;"/>
             <h3 style="text-Align:center; font-size:25px;font-weight:bold">You have mutually paired</h3>
             <p style="padding-top:0.6rem;font-size:1.2rem">Hi ${matchUserObj.firstName},</p>
