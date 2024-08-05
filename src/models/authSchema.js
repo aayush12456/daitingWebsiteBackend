@@ -321,4 +321,5 @@ authSchema.pre("save", async function (next) {
   next();
 });
 const registerUser = new mongoose.model("UserData", authSchema);
+// const registerUser = new mongoose.model("ApnaPanUserDatas", authSchema);
 module.exports = registerUser;
