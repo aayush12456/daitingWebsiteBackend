@@ -21,7 +21,8 @@
 
 const express = require('express');
 const http = require('http');
-const db = require('../backend1/src/db/db');
+// const db = require('../backend1/src/db/db');
+const db = require('./src/db/db');
 const userRoutes = require('./src/routes/authRoutes');
 const chatRoutes=require('./src/routes/chatRoutes')
 const messageRoutes=require('./src/routes/messageRoutes')
