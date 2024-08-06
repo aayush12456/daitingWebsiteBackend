@@ -21,7 +21,6 @@
 
 const express = require('express');
 const http = require('http');
-// const db = require('../backend1/src/db/db');
 const db = require('./src/db/db');
 const userRoutes = require('./src/routes/authRoutes');
 const chatRoutes=require('./src/routes/chatRoutes')
@@ -34,7 +33,8 @@ const app = express();
 const server = http.createServer(app);
 
 const corsOptions = {
-    origin: 'http://localhost:3000',
+    // origin: 'http://localhost:3000',
+    origin: 'https://apnapandating.netlify.app',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
     optionsSuccessStatus: 200
