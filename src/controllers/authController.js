@@ -1655,7 +1655,7 @@ exports.addVisitorSendEmailUser = async (req, res) => {
             <p style="padding-top:1rem;font-size:1.2rem">Hi ${userObj.firstName},</p>
             <p style="font-weight:bold; padding-top:1rem;font-size:1.2rem;color:black">${likeUserObj.firstName} <span style="font-weight:normal;">visited you / browse through your profile.Go check it out</span></p>
             <div style='display:flex;justify-content:center;margin-top:4rem'>
-            <button type='btn' style="background-color:green;font-size:17px;font-weight:bold;color:white;height:45px;width:18rem;border-radius:25px;cursor:pointer" >See your visitors</button
+            <a href="https://apnapandating.netlify.app/" style="text-decoration:none;"> <button type='btn' style="background-color:green;font-size:17px;font-weight:bold;color:white;height:45px;width:18rem;border-radius:25px;cursor:pointer" >See your visitors</button></a>
             </div>`
         };
 
@@ -1695,7 +1695,7 @@ exports.addMatchSendEmailUser = async (req, res) => {
             <p style="padding-top:0.6rem;font-size:1.2rem">Hi ${matchUserObj.firstName},</p>
             <p style="font-weight:bold; padding-top:1rem;font-size:1.2rem;color:black">${userObj.firstName} <span style="font-weight:normal; padding-top:1rem;font-size:1.2rem;">and you are now connected.We are thrilled to discover this mutual interest between you.Feel free to login and explore there profile,this could mark the beginning of an intriguing journey.</span></p>
             <div style='display:flex;justify-content:center;margin-top:4rem'>
-            <button type='btn' style="background-color:white;font-size:17px;font-weight:bold;color:green;height:45px;width:18rem;border-radius:25px;cursor:pointer; border-color: green" >View and reply</button
+            <a href="https://apnapandating.netlify.app" style="text-decoration:none;">  <button type='btn' style="background-color:white;font-size:17px;font-weight:bold;color:green;height:45px;width:18rem;border-radius:25px;cursor:pointer; border-color: green" >View and reply</button></a>
             </div>`
         };
 
