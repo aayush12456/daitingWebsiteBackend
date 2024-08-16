@@ -83,5 +83,10 @@ router.get('/getDeactivateUser/:id', userController.getDeactivateUser);
 router.delete('/getActivateUser/:id', userController.getActivateUser);
 router.post('/forgotUpdatePasswordUser', userController.addForgotUpdatePasswordUser);
 router.get('/compareNumber/:id', userController.compareNumber);
+router.get('/allRegisterUser/:id', userController.allRegisterUser);
+router.post('/admin/register', userController.adminRegister)
+router.post('/admin/login', userController.adminLogin)
+router.get('/allFieldRegisterUser/:id', userController.allFieldRegisterUser);
+router.delete('/deleteProfileFromAdminArray/:id', userController.deleteProfileFromAdminArray);
 // router.get('/allLocalUser', userController.localAllUser);
 module.exports = router;

@@ -1,10 +1,13 @@
 const bcrypt=require('bcrypt')
 const authUser=require('../models/authSchema')
+const adminAuthUser=require('../models/adminSchema')
 // const Upload=require('../helpers/upload')
 const cloudinary = require("cloudinary").v2;
 const io=require('../../app')
 const twilio=require('twilio')
 const nodemailer = require('nodemailer');
+const mongoose = require('mongoose');
+const ObjectId = mongoose.Types.ObjectId;
 const dotenv=require('dotenv')
 // const holdingHand=require('../../src/assets/holdingHands.png')
 // const love=require('../../assets/love')
@@ -814,7 +817,6 @@ exports.getLikesUser=async(req,res)=>{ // function to get data of like user
             
         });
       
-
         res.json({ likeUser });
     }catch (error) {
         console.error(error);
@@ -2263,3 +2265,224 @@ exports.compareLoginWithOtp=async (req,res)=>{
         res.status(400).send({mssg:"Wrong login details. Please try again.",response:400})
     }
 }
+
+exports.allRegisterUser = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        console.log('user id is',userId)
+        const user = await adminAuthUser.findById(userId);
+
+        // Check if the user exists
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const users = await authUser.find();
+
+        // Filter out users with the same city and opposite gender
+        let filteredUsers = users.filter(u => u._id !== user._id);
+
+        res.json({
+            users: filteredUsers
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+exports.adminRegister=async (req,res)=>{
+    try{
+        const email=req.body.adminEmail
+        const password=req.body.adminPassword
+        console.log('admin email',email)
+        console.log('admin pass',password)
+        const UserData = new adminAuthUser ({
+           email:email,
+           password:password
+        });
+
+        const token = await UserData.generateAuthToken();
+        const User = await UserData.save();
+        console.log('admin register user',User)
+        const firstName = User.email.split('@')[0];
+        console.log(firstName); // Output: admin12
+        res.status(201).send({ mssg: 'Data registered Successfully', user: User, firstName:firstName, token: token });
+    }catch(e){
+        res.status(400).send({mssg:"Wrong login details. Please try again.",response:400})
+    }
+}
+exports.adminLogin = async (req, res) => {
+    try {
+           const email=req.body.adminEmail
+    const password=req.body.adminPassword
+        
+        const userEmail = await adminAuthUser.findOne({ email: email });
+        if (!userEmail) {
+            return res.status(400).send({ mssg: "Admin email does not exist", response: 400 });
+        }
+
+        const isMatch = await bcrypt.compare(password, userEmail.password);
+        if (!isMatch) {
+            return res.status(400).send({ mssg: "Wrong password", response: 400 });
+        }
+
+        const adminToken = await userEmail.generateAuthToken();
+        const firstName = userEmail.email.split('@')[0];
+        
+        // Send success response
+        res.status(201).send({
+            mssg: 'Admin login successful',
+            response: 201,
+            token: adminToken,
+            userId: userEmail._id,
+            firstName: firstName,
+        });
+    } catch (e) {
+        console.error('Error during admin login:', e);
+        res.status(500).send({ mssg: "Login failed. Please try again later.", response: 500 });
+    }
+};
+
+exports.allFieldRegisterUser = async (req, res) => {
+    try {
+         const id=req.params.id
+         const registerObj=await authUser.findById(id)
+        //  console.log('likes field register',likes)
+         let likeUserArray
+         likeUserArray = await authUser.find({  
+            _id: { $in: registerObj.likes }, 
+            
+        });
+        let hideRemainMatchArray
+        hideRemainMatchArray = await authUser.find({  
+            _id: { $in: registerObj.hideRemainMatch }, 
+            
+        });
+        let onlineLikeUserArray
+    onlineLikeUserArray = await authUser.find({  
+            _id: { $in: registerObj.onlineLikeUser }, 
+            
+        });
+        let anotherMatchUserArray
+        anotherMatchUserArray = await authUser.find({  
+            _id: { $in: registerObj.anotherMatchUser }, 
+            
+        });
+
+        let skipUserArray
+        skipUserArray = await authUser.find({  
+            _id: { $in: registerObj.skipUser }, 
+            
+        });
+
+        let matchUserArray
+        matchUserArray = await authUser.find({  
+            _id: { $in: registerObj.matchUser }, 
+            
+        });
+        let likeFilterUserArray
+        likeFilterUserArray = await authUser.find({  
+            _id: { $in: registerObj.likeFilterData }, 
+            
+        });
+        let selfOnlineLikeUserArray
+        selfOnlineLikeUserArray = await authUser.find({  
+            _id: { $in: registerObj.selfOnlineLikeUser }, 
+            
+        });
+        let likeUserDataArray
+        likeUserDataArray = await authUser.find({  
+            _id: { $in: registerObj.likeUser }, 
+            
+        });
+        let deactivateProfile=registerObj.deactivatedId
+        let deactivateProfileUser=await authUser.findById(deactivateProfile) 
+
+        const visitorUserArray = registerObj.visitors.map(visitor => visitor.visitorId);
+        const getVisitors = await authUser.find({ _id: { $in: visitorUserArray } });
+        // Send success response
+        res.status(201).send({
+            mssg: 'array data ',
+            response: 201,
+           likes:likeUserArray,
+           visitorUserArray:getVisitors,
+           hideRemainMatchArray:hideRemainMatchArray,
+           onlineLikeUser:onlineLikeUserArray,
+           anotherMatchUser:anotherMatchUserArray,
+           skipUser:skipUserArray,
+           matchUser:matchUserArray,
+           likeFilterUser:likeFilterUserArray,
+           selfOnlineLikeUser:selfOnlineLikeUserArray,
+           likeUser:likeUserDataArray,
+           selfDeactivate:deactivateProfileUser
+        });
+    } catch (e) {
+        console.error('Error during fetching from database for admin:', e);
+        res.status(500).send({ mssg: "request failed. Please try again later.", response: 500 });
+    }
+};
+
+// exports.deleteProfileFromAdminArray = async (req, res) => {     
+//     try {
+//         const adminOpenuserId = req.params.id; 
+//         const userObj = await authUser.findById(adminOpenuserId);
+//         const deleteUserId = req.body.deleteUserId;
+//         const name = req.body.name;
+
+//         if (!userObj) {
+//             return res.status(404).json({ mssg: "User not found" });
+//         }
+
+//         await authUser.updateOne(
+//             { _id: adminOpenuserId },
+//             {
+//                 $pull: {
+//                     likes: ObjectId.isValid(deleteUserId) ? new ObjectId(deleteUserId) : deleteUserId
+//                 }
+//             }
+//         );
+
+//         const updatedUser = await authUser.findById(adminOpenuserId);  // Fetch the updated user to verify changes
+//         console.log('Updated user document:', updatedUser);
+
+//         res.json({ msg: `${name} successfully updated`, updatedUser });
+
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ mssg: "Internal server error" });
+//     }
+// };
+exports.deleteProfileFromAdminArray = async (req, res) => {     
+    try {
+        const adminOpenuserId = req.params.id; 
+        const deletedUserId = req.query.deleteUserId;
+        const userObj = await authUser.findById(adminOpenuserId);
+        console.log('user obj in delee',userObj)
+        console.log('delete user id in array',deletedUserId)
+        
+        await authUser.updateOne(
+            { _id:adminOpenuserId },
+            {
+              $pull: {
+           skipUser:ObjectId.isValid(deletedUserId) ? new ObjectId(deletedUserId) : deletedUserId,
+           matchUser:ObjectId.isValid(deletedUserId) ? new ObjectId(deletedUserId) : deletedUserId,
+           visitors: {
+            visitorId: ObjectId.isValid(deletedUserId) ? new ObjectId(deletedUserId) : deletedUserId
+        },
+        likes:ObjectId.isValid(deletedUserId) ? new ObjectId(deletedUserId) : deletedUserId,
+        hideRemainMatch:ObjectId.isValid(deletedUserId) ? new ObjectId(deletedUserId) : deletedUserId,
+        onlineLikeUser:ObjectId.isValid(deletedUserId) ? new ObjectId(deletedUserId) : deletedUserId,
+        anotherMatchUser:ObjectId.isValid(deletedUserId) ? new ObjectId(deletedUserId) : deletedUserId,
+        likeFilterData:ObjectId.isValid(deletedUserId) ? new ObjectId(deletedUserId) : deletedUserId,
+        selfOnlineLikeUser:ObjectId.isValid(deletedUserId) ? new ObjectId(deletedUserId) : deletedUserId,
+        likeUser:ObjectId.isValid(deletedUserId) ? new ObjectId(deletedUserId) : deletedUserId,
+              }
+            }
+        );
+        const updatedUser = await authUser.findById(adminOpenuserId);
+        res.status(200).json({ mssg: "User updated successfully" ,deleteId:deletedUserId,obj:updatedUser});
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ mssg: "Internal server error" });
+    }
+};
