@@ -1,16 +1,16 @@
 const bcrypt=require('bcrypt')
 const authUser=require('../models/authSchema')
 const adminAuthUser=require('../models/adminSchema')
+const uploadSongs=require('../models/songSchema')
 // const Upload=require('../helpers/upload')
 const cloudinary = require("cloudinary").v2;
+const cloudinaryData = require("cloudinary").v2;
 const io=require('../../app')
 const twilio=require('twilio')
 const nodemailer = require('nodemailer');
 const mongoose = require('mongoose');
 const ObjectId = mongoose.Types.ObjectId;
 const dotenv=require('dotenv')
-// const holdingHand=require('../../src/assets/holdingHands.png')
-// const love=require('../../assets/love')
 dotenv.config()
 const client = twilio(process.env.TWILIO_SID,process.env. TWILIO_AUTH_TOKEN);
 cloudinary.config({ 
@@ -18,6 +18,21 @@ cloudinary.config({
     api_key: process.env.API_KEY,
     api_secret: process.env.API_SECRET
   });
+
+//   cloudinaryData.config({ 
+//     cloud_name: process.env.SONG_CLOUD_NAME,
+//     api_key: process.env.SONG_API_KEY,
+//     api_secret: process.env.SONG_API_SECRET
+//   });
+
+const configureSongCloudinary = () => {
+    cloudinaryData.config({ 
+        cloud_name: process.env.SONG_CLOUD_NAME,
+        api_key: process.env.SONG_API_KEY,
+        api_secret: process.env.SONG_API_SECRET
+    });
+};
+
 // exports.register=async (req,res)=>{
     
 // // const file=req.files.map(file=>file.filename) // in a file array url are store which image present in a upload folder
@@ -169,7 +184,8 @@ exports.register = async (req, res) => {
             looking: req.body.looking,
             relationship: req.body.relationship,
             zodiac: req.body.zodiac,
-            language: req.body.language
+            language: req.body.language,
+            songId:req.body.songId
         });
 
         const token = await UserData.generateAuthToken();
@@ -2486,3 +2502,126 @@ exports.deleteProfileFromAdminArray = async (req, res) => {
         res.status(500).json({ mssg: "Internal server error" });
     }
 };
+
+exports.updateSpotifySong=async(req,res)=>{ // function to update user
+    try{
+        const _id=req.params.id
+        console.log('body is',req.body)
+        console.log(_id)
+        const updateUser=await authUser.findByIdAndUpdate(_id,req.body,{
+            new:true
+        })
+        res.status(201).send({mssg:'update data successfully',updateData:updateUser})
+        console.log('update is',updateUser)
+    }catch(e){
+        res.status(404).send({mssg:'internal server error'})
+    }
+}
+
+exports.addSpotifySong=async(req,res)=>{ // function to update user
+    try{
+        const id=req.params.id
+       const songId=req.body.songId
+       const loginObj = await authUser.findById(id)
+       if (!loginObj) {
+                return res.status(404).json({ mssg: "User not found" });
+            }
+       loginObj.songId=songId
+    const loginUserObj=await loginObj.save()
+    res.json({loginUser:loginUserObj})
+    }catch(e){
+        res.status(404).send({mssg:'internal server error'})
+    }
+}
+exports.getSpotifySong=async(req,res)=>{ // function to update user
+    try{
+        const id=req.params.id
+       const loginObj = await authUser.findById(id)
+       if (!loginObj) {
+        return res.status(404).json({ mssg: "User not found" });
+    }
+       const selectedObj=await uploadSongs.findById(loginObj.songId)
+    res.json({selectedObj:selectedObj})
+    }catch(e){
+        res.status(404).send({mssg:'internal server error'})
+    }
+}
+
+//uploadSong
+exports.uploadSongs = async (req, res) => {
+    let songUrl = '';
+    let songImage = ''
+    try {
+        configureSongCloudinary(); // this config particular use in songData uploading 
+        // Upload MP3 audio file to Cloudinary
+        if (req.files.songUrl && req.files.songUrl.length > 0) { 
+            const audioFile = req.files.songUrl[0]; 
+            console.log('Audio file:', audioFile);
+
+            const audioResult = await  cloudinaryData.uploader.upload(audioFile.path, {
+                resource_type: 'raw', // Use 'raw' for audio files
+                folder: 'uploadAudios', // Folder in Cloudinary
+                format: 'mp3' // Ensures the file is treated as an MP3
+            });
+
+            if (!audioResult || !audioResult.secure_url) {
+                throw new Error('Cloudinary audio upload failed');
+            }
+
+            songUrl = audioResult.secure_url;
+        } else {
+            console.log('No audio file provided');
+            throw new Error('No audio file provided');
+        }
+        
+        if (req.files.songImage) {
+            for (const file of req.files.songImage) {
+                const result = await cloudinaryData.uploader.upload(file.path, {
+                    folder: 'uploadSongImages'
+                });
+
+                if (!result || !result.secure_url) {
+                    throw new Error('Cloudinary song image upload failed');
+                }
+
+                songImage=result.secure_url
+            }
+        }
+        // Save the song data to MongoDB
+        const songUploadData = new uploadSongs({
+            songName: req.body.songName,
+            songUrl: songUrl, // Save the Cloudinary URL in MongoDB
+            songImage:songImage
+        });
+
+        const songUploaded = await songUploadData.save();
+        res.status(201).send({ mssg: 'Song data uploaded successfully', songUpload: songUploaded });
+    } catch (e) {
+        console.error(e);
+        res.status(401).send({ mssg: e.message });
+    }
+};
+
+exports.getUploadSong=async(req,res)=>{ // function to update user
+    try{
+        const id=req.params.id
+       const getUploadData=await uploadSongs.find()
+    res.json({uploadSongsData:getUploadData})
+    }catch(e){
+        res.status(404).send({mssg:'internal server error'})
+    }
+}
+exports.addNoneSong=async(req,res)=>{ // function to update user
+    try{
+        const id=req.params.id
+       const loginObj = await authUser.findById(id)
+       if (!loginObj) {
+                return res.status(404).json({ mssg: "User not found" });
+            }
+       loginObj.songId=''
+    const loginUserObj=await loginObj.save()
+    res.json({loginUser:loginUserObj})
+    }catch(e){
+        res.status(404).send({mssg:'internal server error'})
+    }
+}

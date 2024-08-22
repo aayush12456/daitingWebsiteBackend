@@ -272,6 +272,9 @@ deactivation:{
 deactivatedId:{
   type:String
 },
+songId:{
+  type:String
+},
 deactivatedIdArray:[
   {
     type:Schema.Types.ObjectId,

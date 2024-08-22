@@ -88,5 +88,10 @@ router.post('/admin/register', userController.adminRegister)
 router.post('/admin/login', userController.adminLogin)
 router.get('/allFieldRegisterUser/:id', userController.allFieldRegisterUser);
 router.delete('/deleteProfileFromAdminArray/:id', userController.deleteProfileFromAdminArray);
-// router.get('/allLocalUser', userController.localAllUser);
+router.post('/addSpotifySong/:id', userController.addSpotifySong);
+router.get('/getSpotifySong/:id', userController.getSpotifySong);
+router.post('/updateSpotifySong/:id', userController.updateSpotifySong);
+router.post('/uploadSong', upload.fields([{ name: 'songImage', maxCount: 1 }, { name: 'songUrl', maxCount: 1 }]), userController.uploadSongs);
+router.get('/getUploadSong/:id', userController.getUploadSong);
+router.post('/addNoneSong/:id', userController.addNoneSong);
 module.exports = router;
