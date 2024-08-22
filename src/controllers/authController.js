@@ -27,9 +27,9 @@ cloudinary.config({
 
 const configureSongCloudinary = () => {
     cloudinaryData.config({ 
-        cloud_name: process.env.SONG_CLOUD_NAME,
-        api_key: process.env.SONG_API_KEY,
-        api_secret: process.env.SONG_API_SECRET
+        cloud_name:'dphpqdzbh',
+        api_key:'333651874334761',
+        api_secret:'kGH4e2rMPOoxE6XEYw7Byht5nmw'
     });
 };
 
