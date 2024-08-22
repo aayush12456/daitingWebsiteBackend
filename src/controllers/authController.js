@@ -14,9 +14,9 @@ const dotenv=require('dotenv')
 dotenv.config()
 const client = twilio(process.env.TWILIO_SID,process.env. TWILIO_AUTH_TOKEN);
 cloudinary.config({ 
-    cloud_name: process.env.CLOUD_NAME,
-    api_key: process.env.API_KEY,
-    api_secret: process.env.API_SECRET
+    cloud_name:'dy8mgovcv',
+    api_key:'866228574189123',
+    api_secret:'nyICBYbs0pLsZd48WE4INvtJP38'
   });
 
 //   cloudinaryData.config({ 
