@@ -14,9 +14,9 @@ const dotenv=require('dotenv')
 dotenv.config()
 const client = twilio(process.env.TWILIO_SID,process.env. TWILIO_AUTH_TOKEN);
 cloudinary.config({ 
-    cloud_name:'dy8mgovcv',
-    api_key:'866228574189123',
-    api_secret:'nyICBYbs0pLsZd48WE4INvtJP38'
+    cloud_name:process.env.CLOUD_NAME,
+    api_key:process.env.API_KEY,
+    api_secret:process.env.API_SECRET
   });
 
 //   cloudinaryData.config({ 
@@ -2552,13 +2552,12 @@ exports.uploadSongs = async (req, res) => {
     let songUrl = '';
     let songImage = ''
     try {
-        configureSongCloudinary(); // this config particular use in songData uploading 
-        // Upload MP3 audio file to Cloudinary
+
         if (req.files.songUrl && req.files.songUrl.length > 0) { 
             const audioFile = req.files.songUrl[0]; 
             console.log('Audio file:', audioFile);
 
-            const audioResult = await  cloudinaryData.uploader.upload(audioFile.path, {
+            const audioResult = await  cloudinary.uploader.upload(audioFile.path, {
                 resource_type: 'raw', // Use 'raw' for audio files
                 folder: 'uploadAudios', // Folder in Cloudinary
                 format: 'mp3' // Ensures the file is treated as an MP3
@@ -2576,7 +2575,7 @@ exports.uploadSongs = async (req, res) => {
         
         if (req.files.songImage) {
             for (const file of req.files.songImage) {
-                const result = await cloudinaryData.uploader.upload(file.path, {
+                const result = await cloudinary.uploader.upload(file.path, {
                     folder: 'uploadSongImages'
                 });
 
