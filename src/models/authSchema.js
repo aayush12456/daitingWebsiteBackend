@@ -281,15 +281,122 @@ deactivatedIdArray:[
     ref:'UserData'
   }
 ],
+blockUserArray:[
+  {
+    type:Schema.Types.ObjectId,
+    ref:'UserData'
+  }
+],
+oppositeBlockUserArray:[
+  {
+    type:Schema.Types.ObjectId,
+    ref:'UserData'
+  }
+],
 otp:{
   type:String
 },
+postTyping:{
+  loginId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'UserData',
+  },
+  senderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'UserData',
+  },
+  recieverId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'UserData',
+  },
+  message: {
+    type: String,
+    ref: 'UserData',
+  },
+},
+// postTyping:[
+//   {
+//     loginId: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: 'UserData',
+//     },
+//     senderId: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: 'UserData',
+//     },
+//     recieverId: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: 'UserData',
+//     },
+//     message: {
+//       type: String,
+//       ref: 'UserData',
+//     },
+//   }
+ 
+// ],
+messageNotify: [
+  {
+    loginId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'UserData',
+    },
+    senderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'UserData',
+    },
+    recieverId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'UserData',
+    },
+    chatId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'UserData',
+    },
+    senderName: {
+      type: String,
+      ref: 'UserData',
+    },
+    message: {
+      type: String,
+      ref: 'UserData',
+    },
+   images:{
+    type:String
+   },
+    timestamp: {
+      type: Date,
+      required: true,
+    }
+  }
+],
+recordChat: [
+  {
+    loginId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'UserData',
+    },
+    senderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'UserData',
+    },
+    recieverId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'UserData',
+    },
+    chatId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'UserData',
+    },
+    message: {
+      type: String,
+      ref: 'UserData',
+    },
+    timestamp: { type: String } 
+  }
+],
 },
 
-
-{
-  timestamps : true
-}
 );
 
 

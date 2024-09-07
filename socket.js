@@ -1,18 +1,20 @@
 const socketCon = {
-    init : server => {
-        const io = require('socket.io')(server,{
-            cors : 'http://localhost:4000'
-        })
-        io.on('connection' , socket => {
-            console.log('client connected');
-        })
-        return io
+    io: null,
+
+    init: (ioInstance) => {
+        this.io = ioInstance;
     },
-    getIO: function() {
-        if (this.io) {
-            return this.io;
+    //   init: function(ioInstance) {
+    //     this.io = ioInstance;  // Use "this" correctly in function scope
+    // },
+
+
+    getIO: function () {
+        if (!this.io) {
+            throw new Error('Socket.io not initialized!');
         }
+        return this.io;
     }
 };
 
-module.exports = socketCon
+module.exports = socketCon;

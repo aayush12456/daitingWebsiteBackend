@@ -2,6 +2,7 @@ const bcrypt=require('bcrypt')
 const authUser=require('../models/authSchema')
 const adminAuthUser=require('../models/adminSchema')
 const uploadSongs=require('../models/songSchema')
+const loginIdUser=require('../models/loginIdSchema')
 // const Upload=require('../helpers/upload')
 const cloudinary = require("cloudinary").v2;
 const cloudinaryData = require("cloudinary").v2;
@@ -197,32 +198,60 @@ exports.register = async (req, res) => {
         res.status(401).send({ mssg: 'Data does not added' });
     }
 };
-exports.login=async (req,res)=>{
-    try{
-    const email=req.body.email
-    const password=req.body.password
-    const userEmail=await authUser.findOne({email:email})
-     const isMatch=await bcrypt.compare(password,userEmail.password)
-     console.log('password login data',isMatch)
-     const token = await userEmail.generateAuthToken();
-     console.log('login token is',token)
-     if(isMatch){
-        const data = await authUser.findOne({email : email}) // user ne jo  login email dala hai usne database me pade email se match hua or pura object dikha diya 
-        console.log('data is login',data)
-      res.status(201).send({mssg:'Login Successfully',response:201,loginData:{email:email,password:password},token:token,userId:userEmail._id,completeData:data})
+
+exports.login = async (req, res) => {
+    try {
+      const email = req.body.email;
+      const password = req.body.password;
+  
+      const userEmail = await authUser.findOne({ email: email });
+  
+      if (!userEmail) {
+        res.status(400).send({ mssg: "Email does not exist", response: 400 });
+        return;
+      }
+
+      const isMatch = await bcrypt.compare(password, userEmail.password);
+      console.log('password login data', isMatch);
+  
+      if (isMatch) {
+        const token = await userEmail.generateAuthToken();
+        console.log('login token is', token);
+  
+        const data = await authUser.findOne({ email: email });
+
+        const existingLoginIdUser = await loginIdUser.findOne({ loginId: data._id });
+        let existingLoginData;
+  
+        if (!existingLoginIdUser) {
+          const loginDataObj = new loginIdUser({
+            loginId: data._id.toString(),
+            loginEmail: data.email
+          });
+        existingLoginData=  await loginDataObj.save();
+        } else {
+          console.log('User is already logged in on another device.');
+          existingLoginData = existingLoginIdUser;
+        }
+        res.status(201).send({
+          mssg: 'Login Successfully',
+          response: 201,
+          loginData: { email: email, password: password },
+          token: token,
+          userId: userEmail._id,
+          completeData: data,
+          existingLoginData: existingLoginData
+        });
+      } else {
+        res.status(400).send({ mssg: "Wrong password", response: 400 });
+      }
+    } catch (e) {
+      res.status(400).send({ mssg: "Wrong login details. Please try again.", response: 400 });
     }
-    else{
-        res.status(400).send({mssg:"wrong password",response:400 }) 
-        return 
-            }
-            if(!userEmail){
-                   res.status(400).send({mssg:"email does not exist"})
-                   return
-             }
-    }catch(e){
-        res.status(400).send({mssg:"Wrong login details. Please try again.",response:400})
-    }
-}
+  };
+  
+
+
 
 exports.allUser = async (req, res) => {
     try {
@@ -712,6 +741,12 @@ exports.getVisitorUser = async (req, res) => {
         visitorsWithTime = visitorsWithTime.filter(visitorWithTime => {
             return !user.deactivatedIdArray.some(deactivateUserId => deactivateUserId.toString() === visitorWithTime.visitor._id.toString());
         });
+        visitorsWithTime = visitorsWithTime.filter(visitorWithTime => {
+            return !user.blockUserArray.some(blockUserId => blockUserId.toString() === visitorWithTime.visitor._id.toString())
+        });
+        visitorsWithTime = visitorsWithTime.filter(visitorWithTime => {
+            return !user.oppositeBlockUserArray.some(oppositeBlockUserId => oppositeBlockUserId.toString() === visitorWithTime.visitor._id.toString())
+        });
         res.json({ visitors: visitorsWithTime });
     } catch (error) {
         console.error(error);
@@ -823,8 +858,16 @@ exports.getLikesUser=async(req,res)=>{ // function to get data of like user
         let likeUserArray
          likeUserArray=user.likes
         const deactivateUserArray=user.deactivatedIdArray
+        const blockUserArray=user.blockUserArray
+        const oppositeBlockUserArray=user.oppositeBlockUserArray
         likeUserArray = likeUserArray.filter(likeUserId => {
             return !deactivateUserArray.some(deactivateUserId => deactivateUserId .toString() === likeUserId.toString());
+        });
+        likeUserArray = likeUserArray.filter(likeUserId => {
+            return !blockUserArray.some(blockUserId => blockUserId .toString() === likeUserId.toString());
+        });
+        likeUserArray = likeUserArray.filter(likeUserId => {
+            return !oppositeBlockUserArray.some(oppositeBlockUserId => oppositeBlockUserId .toString() === likeUserId.toString());
         });
         console.log('visitors is',likeUserArray)
         let likeUser;
@@ -1194,7 +1237,12 @@ exports.getVisitorPlusLikesUser=async(req,res)=>{ // function to get data of lik
         const userId = req.params.id; // login user id
         const user = await authUser.findById(userId);
         console.log('get visitor plus like user is',user)
-        const likeVisitorUserArray=user.likeUser
+        const blockUserArray=user.blockUserArray
+        const oppositeBlockUserArray=user.oppositeBlockUserArray
+        let likeVisitorUserArray
+       likeVisitorUserArray=user.likeUser
+       likeVisitorUserArray = likeVisitorUserArray.filter(likeVisitorItem => !blockUserArray.includes(likeVisitorItem._id.toString()));
+       likeVisitorUserArray = likeVisitorUserArray.filter(likeVisitorItem => !oppositeBlockUserArray.includes(likeVisitorItem._id.toString()));
         console.log(' like plus visitors is',likeVisitorUserArray)
         let likeUser;
         likeUser = await authUser.find({  
@@ -1408,31 +1456,27 @@ exports.getMatchUser=async(req,res)=>{ // function to get data of like user
         const obj=await authUser.findById(user.matchNotify)
 
         const deactivateUserArray=user.deactivatedIdArray
-        // getMatchUserArray= getMatchUserArray.filter(getMatchUserId => {
-        //     return !deactivateUserArray.some(deactivateUserId => deactivateUserId .toString() === getMatchUserId.toString());
-        // });
-
-        // anothergetMatchUserArray= anothergetMatchUserArray.filter(anothergetMatchUserId => {
-        //     return !deactivateUserArray.some(deactivateUserId => deactivateUserId .toString() === anothergetMatchUserId.toString());
-        // });
-        // anothergetMatchUserData= anothergetMatchUserData.filter(anothergetMatchUserDataId => {
-        //     return !deactivateUserArray.some(deactivateUserId => deactivateUserId .toString() === anothergetMatchUserDataId.toString());
-        // });
+        const blockUserArray=user.blockUserArray 
+        const oppositeBlockUserArray=user.oppositeBlockUserArray
+        
         let matchUser;
         matchUser = await authUser.find({  
             _id: { $in: getMatchUserArray }, 
             
         });
+        matchUser = matchUser.filter(matchItem => !blockUserArray.includes(matchItem._id.toString()));
+        matchUser = matchUser.filter(matchItem => !oppositeBlockUserArray.includes(matchItem._id.toString()));
         let anotherMatchUser;
         anotherMatchUser=await authUser.find({
             _id: { $in:anothergetMatchUserArray }
         })
-        
+        anotherMatchUser = anotherMatchUser.filter(anotherMatchItem => !blockUserArray.includes(anotherMatchItem._id.toString()));
+        anotherMatchUser = anotherMatchUser.filter(anotherMatchItem => !oppositeBlockUserArray.includes(anotherMatchItem._id.toString()));
         let anotherMatchUserData;
         anotherMatchUserData=await authUser.find({
             _id: { $in:anothergetMatchUserData }
         })
-             
+       
 
         res.json({matchUser: matchUser,anotherMatchUser:anotherMatchUser,lastAnotherMatchUser:obj,anotherMatchUserData:anotherMatchUserData  });
         setTimeout(async () => {
@@ -1863,18 +1907,28 @@ exports.getOnlineLikeUser = async (req, res) => {
         if (!user) {
             return res.status(404).json({ mssg: "User not found" });
         }
-        
-        const onlineLikeUserArray = user.onlineLikeUser;
-        const onlineLikeUserData = await authUser.find({ _id: { $in: onlineLikeUserArray } });
+        const blockUserArray=user.blockUserArray
+        const oppositeBlockUserArray=user.oppositeBlockUserArray
 
-        const selfOnlineLikeUserArray = user.selfOnlineLikeUser;
+        let onlineLikeUserArray
+         onlineLikeUserArray = user.onlineLikeUser;
+         onlineLikeUserArray=onlineLikeUserArray.filter(onlineLikeItem=>!blockUserArray.includes(onlineLikeItem._id.toString()))
+         onlineLikeUserArray=onlineLikeUserArray.filter(onlineLikeItem=>!oppositeBlockUserArray.includes(onlineLikeItem._id.toString()))
+
+        const onlineLikeUserData = await authUser.find({ _id: { $in: onlineLikeUserArray } });
+        
+        let selfOnlineLikeUserArray
+        selfOnlineLikeUserArray = user.selfOnlineLikeUser;
+        selfOnlineLikeUserArray = selfOnlineLikeUserArray .filter(selfOnlineLikeItem=>!blockUserArray.includes(selfOnlineLikeItem._id.toString()))
+        selfOnlineLikeUserArray = selfOnlineLikeUserArray .filter(selfOnlineLikeItem=>!oppositeBlockUserArray.includes(selfOnlineLikeItem._id.toString()))
+
         const selfOnlineLikeUserData = await authUser.find({ _id: { $in: selfOnlineLikeUserArray } });
 
         // Remove visitors that are also in selfOnlineLikeUserArray
         user.visitors = user.visitors.filter(visitor => 
             !onlineLikeUserArray.includes(visitor.visitorId)
         );
-
+       
         const deactivateUserArray = user.deactivatedIdArray;
         const filteredOnlineLikeUserData = onlineLikeUserData.filter(user => {
             return !deactivateUserArray.includes(user._id.toString());
@@ -2624,3 +2678,185 @@ exports.addNoneSong=async(req,res)=>{ // function to update user
         res.status(404).send({mssg:'internal server error'})
     }
 }
+exports.getLoginIdUsers=async(req,res)=>{
+try{
+const id=req.params.id
+const loginIdUserData=await loginIdUser.find()
+const loginIdUserArray=loginIdUserData.filter((loginItem)=>loginItem.loginId!==id)
+const loginIds = loginIdUserArray.map((loginItem) => loginItem.loginId);
+const loginUserArray=await authUser.find({
+    _id:{$in:loginIds}
+})
+res.json({loginIdUser:loginIdUserArray,loginUserArray:loginUserArray})
+}catch(e){
+        res.status(404).send({mssg:'internal server error'})
+    }
+}
+exports.deleteLoginIdUser=async(req,res)=>{
+    try{
+   const loginId=req.params.id
+const loginIdUserObj=await loginIdUser.findOne({loginId:loginId})
+   const deletedUser = await loginIdUser.findOneAndDelete(loginIdUserObj._id);
+   const io = req.app.locals.io;
+   io.emit('deleteLoginIdUser', deletedUser);
+   if (!deletedUser) {
+       return res.status(404).send({ mssg: 'User not found' });
+   }
+
+   res.status(200).send({ mssg: 'User deleted successfully',deletedUserData:deletedUser });
+    }catch(e){
+        res.status(500).send({mssg:'internal server error'})
+    }
+}
+
+exports.blockChatUser=async(req,res)=>{
+    try{
+   const id=req.params.id
+   const blockId=req.body.blockId
+   const loginObj=await authUser.findById(id)
+   const blockObj=await authUser.findById(blockId)
+   
+   if (!loginObj) {
+    return res.status(404).send({ mssg: 'User not found' });
+}
+   loginObj.blockUserArray.push(blockId)
+   blockObj.oppositeBlockUserArray.push(id)
+   const finalLoginObj=await loginObj.save()
+   const finalOppositeLoginObj=await blockObj.save()
+   res.status(200).send({mssg:'block user successfully',loginObj:finalLoginObj,oppositeLoginObj:finalOppositeLoginObj})
+    }catch(e){
+        res.status(500).send({mssg:'internal server error'})   
+    }
+}
+exports.getBlockChatUser=async(req,res)=>{
+    try{
+        const id=req.params.id
+        const loginObj=await authUser.findById(id)
+        const blockUserArrayData=loginObj.blockUserArray
+        const blockUserArray=await authUser.find({
+            _id:{$in:blockUserArrayData}
+        })
+        res.status(200).send({mssg:'block message fetch data successfuly',blockUserArray:blockUserArray})
+
+    }catch(e){
+        res.status(500).send({mssg:'internal server error'})    
+    }
+}
+exports.deleteBlockUser = async (req, res) => {
+    try {
+        const id = req.params.id; // Logged-in user ID
+        const blockId = req.body.blockId; // ID of the user to unblock
+
+        // Find the logged-in user and the blocked user
+        const loginObj = await authUser.findById(id);
+        const blockObj = await authUser.findById(blockId);
+
+        if (!loginObj || !blockObj) {
+            return res.status(404).send({ mssg: 'User not found' });
+        }
+
+        // Remove blockId from blockUserArray of the logged-in user
+        await authUser.findByIdAndUpdate(id, {
+            $pull: { blockUserArray: blockId }
+        });
+
+        // Remove id from oppositeBlockUserArray of the blocked user
+        await authUser.findByIdAndUpdate(blockId, {
+            $pull: { oppositeBlockUserArray: id }
+        });
+
+        res.send({ mssg: 'User unblocked successfully' });
+    } catch (e) {
+        console.error(e);
+        res.status(500).send({ mssg: 'Internal server error' });
+    }
+};
+const moment = require('moment-timezone');
+
+exports.getMessageNotifyUser = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    // Fetch the user object
+    const loginObj = await authUser.findById(id);
+
+    if (!loginObj) {
+      return res.status(404).send({ mssg: 'User not found' });
+    }
+
+    // Get the current time
+    const currentTime = moment().tz('Asia/Kolkata');
+
+    // Filter out notifications that are older than 5 seconds
+    loginObj.messageNotify = loginObj.messageNotify.filter((notification) => {
+      const notificationTime = moment(notification.timestamp);
+      return currentTime.diff(notificationTime, 'seconds') <= 10;
+    });
+
+    // Save the updated user object with the filtered notifications
+    // const loginIds = loginObj.messageNotify.map(notification => notification.loginId);
+
+    // Query the authUser collection for these loginIds
+    // const messageNotify = await authUser.find({
+    //   _id: { $in: loginIds }
+    // });
+    await loginObj.save();
+    
+    // Send the response with the filtered notifications
+    res.status(200).send({ mssg: 'Message notify', messageNotify:loginObj.messageNotify });
+  } catch (e) {
+    console.error(e);
+    res.status(500).send({ mssg: 'Internal server error' });
+  }
+};
+
+exports.getRecordChatData = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const loginObj = await authUser.findById(id);
+
+        if (!loginObj) {
+            return res.status(404).send({ mssg: 'User not found' });
+        }
+
+        const currentTime = Date.now();
+        const twoMinutes = 2 * 60 * 1000; // 2 minutes in milliseconds
+
+        // Filter out objects that are older than 2 minutes
+        const getRecordChatData = loginObj.recordChat.filter(chat => {
+            const chatTime = new Date(chat.timestamp).getTime();
+            return currentTime - chatTime <= twoMinutes;
+        });
+
+        // Update the user's recordChat with the filtered array
+        loginObj.recordChat = getRecordChatData;
+        await loginObj.save();
+
+        res.status(200).send({ mssg: 'Record chat data fetched successfully', recordChat: getRecordChatData });
+    } catch (e) {
+        console.error(e);
+        res.status(500).send({ mssg: 'Internal server error' });
+    }
+};
+
+exports.deleteRecordData = async (req, res) => {
+    try {
+      const id = req.params.id; // Get user ID from request parameters
+      const chatId = req.body.chatId; // Get chat ID from request body
+      const chatObj=req.body
+  
+      // Find the user by ID and remove the chat from the recordChat array
+      await authUser.findByIdAndUpdate(
+        id, 
+        { $pull: { recordChat: { chatId: chatId } } }, // Assuming each chat in recordChat has a unique _id field
+        { new: true } // Return the updated document after the operation
+      );
+      const io = req.app.locals.io;
+      io.emit('chatRecordDeleted', chatObj);
+      res.status(200).send({ mssg: 'Chat record deleted successfully',chatObj:chatObj });
+    } catch (e) {
+      console.error(e);
+      res.status(500).send({ mssg: 'Internal server error' });
+    }
+  }
+  
