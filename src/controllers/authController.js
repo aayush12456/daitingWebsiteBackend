@@ -2323,12 +2323,24 @@ exports.compareLoginWithOtp=async (req,res)=>{
         res.status(400).send({mssg:"OTP does not match"})
         return
   }
-     
+  const existingLoginIdUser = await loginIdUser.findOne({ loginId: OTPPhoneObj._id });
+  let existingLoginData;
+
+  if (!existingLoginIdUser) {
+    const loginDataObj = new loginIdUser({
+      loginId: OTPPhoneObj._id.toString(),
+      loginEmail: OTPPhoneObj.email
+    });
+  existingLoginData=  await loginDataObj.save();
+  } else {
+    console.log('User is already logged in on another device.');
+    existingLoginData = existingLoginIdUser;
+  }
      const token = await OTPPhoneObj.generateAuthToken();
      console.log('login token is',token)
      OTPPhoneObj.otp=''
      await OTPPhoneObj.save()
-      res.status(201).send({mssg:'Login Successfully',token:token,userId:OTPPhoneObj._id,completeData:OTPPhoneObj,loginData:{email:OTPPhoneObj.email}})
+      res.status(201).send({mssg:'Login Successfully',token:token,userId:OTPPhoneObj._id,completeData:OTPPhoneObj,loginData:{email:OTPPhoneObj.email},existingLoginData:existingLoginData})
     
    
     }catch(e){
