@@ -191,8 +191,12 @@ exports.register = async (req, res) => {
 
         const token = await UserData.generateAuthToken();
         const User = await UserData.save();
-
-        res.status(201).send({ mssg: 'Data registered Successfully', user: User, token: token,existingLoginData:User });
+        const loginDataObj = new loginIdUser({
+            loginId: User._id.toString(),
+            loginEmail: User.email
+          });
+        existingLoginData=  await loginDataObj.save();
+        res.status(201).send({ mssg: 'Data registered Successfully', user: User, token: token,existingLoginData:existingLoginData });
     } catch (e) {
         console.error(e);
         res.status(401).send({ mssg: 'Data does not added' });
