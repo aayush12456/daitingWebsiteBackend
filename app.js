@@ -26,7 +26,6 @@ app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use('/user', userRoutes);
 app.use('/chat',chatRoutes)
 
-
 const port = process.env.PORT || 4000;
 
 server.listen(port, () => {
@@ -34,8 +33,8 @@ server.listen(port, () => {
 });
 const io = require('socket.io')(server, {
     cors: {
-        // origin: 'http://localhost:3000', // or your frontend URL
-        origin: 'https://apnapandating.netlify.app',
+        origin: 'http://localhost:3000', // or your frontend URL
+        // origin: 'https://apnapandating.netlify.app',
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
         credentials: true,
         pingTimeout:600000,
