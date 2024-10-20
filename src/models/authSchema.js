@@ -46,7 +46,6 @@ const authSchema = mongoose.Schema({
   },
   aboutUser: {
     type: String,
-    required: true,
     min: 10,
   },
 
