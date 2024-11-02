@@ -10,7 +10,7 @@ dotenv.config()
 
 // MONGODB_CONNECT_URL yha mera production server ka url aayega jo ki .env me present hai
 mongoose.connect(process.env.MONGODB_CONNECT_URL).then(()=>{
-    console.log("Database connected successfully")
+    console.log("Database connected successfully in production")
 }).catch(()=>{
     console.log("unable to connect ")
 })
