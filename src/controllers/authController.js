@@ -1673,7 +1673,7 @@ exports.addSmsTextUser = async (req, res) => {
             body: `Congrats! ${likeUserObj.firstName} just liked you now on ApnaPan checkout your likes`, // Your message here
             // aayushtapadia28@gmail.co or aayushtapadia2001@gmail.com generated twillo phone number
             // from: '+12513335644', // Your Twilio phone number
-            from: '+12513103964', // Your Twilio phone number
+            from: '+12185304074', // Your Twilio phone number
             to: '+91'+userObj.phone.toString() // Phone number of likeUserObj
         });
 
@@ -2304,7 +2304,7 @@ exports.loginWithOtp=async (req,res)=>{
     body:message,
     //aayushtapadia28@gmail.com or aayushtapadia2001@gmail.com generate twillo phone number
     // from: '+12513335644', // Your Twilio phone number
-    from: '+12513103964',
+    from: '+12185304074',
     to: '+91'+filterPhoneObj.phone.toString() // Phone number of likeUserObj
 });
 filterPhoneObj.otp=randomCode
