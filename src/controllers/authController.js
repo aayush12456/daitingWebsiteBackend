@@ -266,8 +266,8 @@ exports.allUser = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-
-        const city = user.city;
+        // const city = user.city
+        const city = user.city.trim();
         const gender = user.gender;
         const visitors = user.visitors.map(visitor => visitor.visitorId.toString()); // Assuming visitors is an array of ObjectIds
         const likes = user.likes.map(like => like.toString());
@@ -277,7 +277,8 @@ exports.allUser = async (req, res) => {
         const users = await authUser.find();
 
         // Filter out users with the same city and opposite gender
-        let filteredUsers = users.filter(u => u.city !== city);
+        // let filteredUsers = users.filter(u => u.city !== city);
+        let filteredUsers = users.filter(u => u.city.trim() !== city);
 
         if (gender === 'Male') {
             filteredUsers = filteredUsers.filter(u => u.gender === 'Female');
@@ -433,11 +434,12 @@ exports.getFilterUser = async (req, res) => {
         const likeFilterUserArray = user.likeFilterData;
         console.log('like filter user array', likeFilterUserArray);
 
-        const userInterests = user.interest; // Get interests of the user
+        // const userInterests = user.interest; // Get interests of the user
         const userGender = user.gender;
         const userCity = user.city; // Get city of the user
+        const formattedCity = userCity.trim(); 
         console.log('gender is', userGender);
-        console.log('city is', userCity);
+        // console.log('city is', userCity);
 
         const hideRemainMatchArray = user.hideRemainMatch;
         console.log('hide remain match array', hideRemainMatchArray);
@@ -454,16 +456,18 @@ exports.getFilterUser = async (req, res) => {
             // Find females with at least one similar interest, matching city, and not in filterUserArray or likeFilterUserArray
             interestUsers = await authUser.find({ 
                 gender: 'Female', 
-                interest: { $in: userInterests },
-                city: userCity,
+                // interest: { $in: userInterests },
+                // city: userCity,
+                city: { $regex: new RegExp(`^${formattedCity}\\s*$`, "i") },
                 _id: { $nin: [...filterUserArray, ...likeFilterUserArray] }
             });
         } else if (userGender === 'Female') {
             // Find males with at least one similar interest, matching city, and not in filterUserArray or likeFilterUserArray
             interestUsers = await authUser.find({ 
                 gender: 'Male', 
-                interest: { $in: userInterests },
-                city: userCity,
+                // interest: { $in: userInterests },
+                // city: userCity,
+                city: { $regex: new RegExp(`^${formattedCity}\\s*$`, "i") },
                 _id: { $nin: [...filterUserArray, ...likeFilterUserArray] }
             });
         } else {
