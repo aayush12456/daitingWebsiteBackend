@@ -2102,23 +2102,23 @@ exports.addUpdatePasswordUser = async (req, res) => {
 exports.deleteProfileUser = async (req, res) => {
     try {
       const id = req.params.id;
-      const userObj=await authUser.findById(id)
-      if (!userObj) {
-        return res.status(404).json({ msg: "User not found" });
-      }
+    //   const userObj=await authUser.findById(id)
+    //   if (!userObj) {
+    //     return res.status(404).json({ msg: "User not found" });
+    //   }
   
-      // Delete the video from Cloudinary
-      if (userObj.videoUrl) {
-        const videoUrl = userObj.videoUrl;
-        const publicId = videoUrl.split('/').slice(-2).join('/').split('.')[0];
-        await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
-      }
-      if (userObj.images && Array.isArray(userObj.images)) {
-        for (const imageUrl of userObj.images) {
-          const publicId = imageUrl.split('/').slice(-2).join('/').split('.')[0];
-          await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
-        }
-      }
+    //   // Delete the video from Cloudinary
+    //   if (userObj.videoUrl) {
+    //     const videoUrl = userObj.videoUrl;
+    //     const publicId = videoUrl.split('/').slice(-2).join('/').split('.')[0];
+    //     await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+    //   }
+    //   if (userObj.images && Array.isArray(userObj.images)) {
+    //     for (const imageUrl of userObj.images) {
+    //       const publicId = imageUrl.split('/').slice(-2).join('/').split('.')[0];
+    //       await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+    //     }
+    //   }
       const deletedUser = await authUser.findByIdAndDelete(id);
   
       if (!deletedUser) {
